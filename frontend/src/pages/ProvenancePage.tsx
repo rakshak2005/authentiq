@@ -94,7 +94,7 @@ export default function ProvenancePage() {
         editing_details: editingDetails.trim() || null,
         creation_date: creationDate ? new Date(creationDate).toISOString() : null,
       });
-      toast.success("AI disclosure written to the ledger");
+      toast.success("AI Disclosure written to the ledger");
       setRecordOpen(false);
       provenanceQuery.refetch();
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
@@ -253,7 +253,7 @@ export default function ProvenancePage() {
       <Dialog open={recordOpen} onOpenChange={(value) => !busy && setRecordOpen(value)}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Record AI disclosure</DialogTitle>
+            <DialogTitle>Record AI Disclosure</DialogTitle>
             <DialogDescription>
               The declaration is encrypted at rest. A commitment and ledger entry are created so the statement can be referenced later.
             </DialogDescription>

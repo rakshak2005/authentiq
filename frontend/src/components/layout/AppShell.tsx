@@ -111,7 +111,7 @@ interface SearchResults {
 function Brand({ compact }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-2.5">
-      <BrandLogo className="size-9 rounded-xl shadow-[0_10px_30px_-12px_rgba(99,102,241,0.9)] ring-1 ring-white/10" />
+      <BrandLogo className="size-9" />
       {!compact && (
         <div className="leading-tight">
           <p className="text-sm font-semibold tracking-[0.2em]">AUTHENTIQ</p>

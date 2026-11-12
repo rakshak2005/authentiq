@@ -95,7 +95,7 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout greenParticlesOnly>
       <div className="animate-in-up">
         <div className="mb-8 flex items-center gap-3 lg:hidden">
           <BrandLogo className="size-10 rounded-xl ring-1 ring-white/10" />

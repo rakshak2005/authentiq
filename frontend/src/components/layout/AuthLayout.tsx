@@ -10,7 +10,7 @@ const facts = [
   { icon: ShieldCheck, title: "Encrypted at rest", text: "Files and private idea content are encrypted. Every privileged action enters a hash-chained audit log." },
 ];
 
-function NetworkCanvas() {
+function NetworkCanvas({ greenOnly = false }: { greenOnly?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -23,13 +23,13 @@ function NetworkCanvas() {
     let width = 0;
     let height = 0;
 
-    const nodes = Array.from({ length: 30 }, () => ({
+    const nodes = Array.from({ length: greenOnly ? 38 : 30 }, () => ({
       x: Math.random(),
       y: Math.random(),
       vx: (Math.random() - 0.5) * 0.00045,
       vy: (Math.random() - 0.5) * 0.00045,
       r: 1 + Math.random() * 2.2,
-      accent: Math.random() > 0.78,
+      accent: greenOnly || Math.random() > 0.78,
     }));
 
     const resize = () => {
@@ -99,14 +99,22 @@ function NetworkCanvas() {
   return <canvas ref={canvasRef} className="absolute inset-0 size-full opacity-80" aria-hidden="true" />;
 }
 
-export function AuthLayout({ children }: { children: ReactNode }) {
+export function AuthLayout({
+  children,
+  greenParticlesOnly = false,
+  removeHeadlineHighlight = false,
+}: {
+  children: ReactNode;
+  greenParticlesOnly?: boolean;
+  removeHeadlineHighlight?: boolean;
+}) {
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       <div className="pointer-events-none absolute inset-0 radial-glow opacity-70" />
       <div className="pointer-events-none absolute inset-0 grid-bg opacity-40" />
       <div className="relative mx-auto grid min-h-screen max-w-[1400px] lg:grid-cols-[1.05fr_1fr]">
         <section className="relative hidden overflow-hidden border-r border-border/60 p-10 lg:flex lg:flex-col lg:justify-between xl:p-14">
-          <NetworkCanvas />
+          <NetworkCanvas greenOnly={greenParticlesOnly} />
           <div className="relative">
             <div className="flex items-center gap-3">
               <BrandLogo className="size-11 rounded-2xl shadow-[0_16px_40px_-16px_rgba(23,23,23,0.85)] ring-1 ring-white/10" />
@@ -124,7 +132,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
             <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight xl:text-5xl">
               Protect the creation.
               <br />
-              <span className="text-gradient">Prove the ownership.</span>
+              <span className={removeHeadlineHighlight ? undefined : "text-gradient"}>Prove the ownership.</span>
               <br />
               Preserve the privacy.
             </h1>

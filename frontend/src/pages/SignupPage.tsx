@@ -75,7 +75,7 @@ export default function SignupPage() {
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout removeHeadlineHighlight>
       <div className="animate-in-up">
         <div className="mb-7 flex items-center gap-3 lg:hidden">
           <BrandLogo className="size-10 rounded-xl ring-1 ring-white/10" />

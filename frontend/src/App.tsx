@@ -35,7 +35,7 @@ import LandingPage from "@/pages/LandingPage";
 function FullPageLoader() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
-      <BrandLogo className="size-12 rounded-2xl shadow-lg ring-1 ring-white/10" />
+      <BrandLogo className="size-12" />
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span className="size-3 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
         Restoring your workspace session
