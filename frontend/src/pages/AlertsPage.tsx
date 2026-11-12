@@ -95,8 +95,7 @@ export default function AlertsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Ownership protection"
-        title="Alerts and similarity matches"
+        title="ALERTS"
         description="Duplicate fingerprints and perceptual matches detected during registration. Similarity scores are investigation aids, not findings of infringement."
         actions={
           <Badge variant={openAlerts ? "amber" : "green"} className="h-7 px-3">

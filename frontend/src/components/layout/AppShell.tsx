@@ -61,8 +61,8 @@ const navSections: Array<{
       { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { to: "/register", label: "Register creation", icon: PlusCircle },
       { to: "/timeline", label: "Timeline", icon: Activity },
-      { to: "/ideas", label: "Idea vault", icon: Lightbulb },
-      { to: "/provenance", label: "AI disclosure", icon: Sparkles },
+      { to: "/ideas", label: "Idea Vault", icon: Lightbulb },
+      { to: "/provenance", label: "AI Disclosure", icon: Sparkles },
     ],
   },
   {
@@ -455,9 +455,17 @@ export function AppShell() {
   const crumbs = useMemo(() => {
     const segments = location.pathname.split("/").filter(Boolean);
     if (!segments.length) return [];
+    const labels: Record<string, string> = {
+      ideas: "Idea Vault",
+      provenance: "AI Disclosure",
+      timeline: "Timeline",
+      "anonymous-verification": "Prove Ownership",
+      "audit-logs": "Ledger & Audit",
+    };
     return segments.map((segment) => {
       if (/^[0-9a-f-]{20,}$/i.test(segment)) return "Detail";
-      return titleCase(decodeURIComponent(segment).replace(/-/g, " "));
+      const decoded = decodeURIComponent(segment);
+      return labels[decoded] || titleCase(decoded.replace(/-/g, " "));
     });
   }, [location.pathname]);
 

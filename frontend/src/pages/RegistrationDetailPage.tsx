@@ -550,7 +550,7 @@ export default function RegistrationDetailPage() {
           <TabsTrigger value="overview"><Fingerprint /> Overview</TabsTrigger>
           <TabsTrigger value="versions"><Layers /> Versions ({versionsQuery.data?.items.length || 1})</TabsTrigger>
           <TabsTrigger value="proofs"><ShieldCheck /> Proofs & sharing</TabsTrigger>
-          <TabsTrigger value="provenance"><Sparkles /> Provenance</TabsTrigger>
+          <TabsTrigger value="provenance"><Sparkles /> AI Disclosure</TabsTrigger>
           <TabsTrigger value="actions"><ArrowLeftRight /> Ownership actions</TabsTrigger>
         </TabsList>
 
@@ -1065,8 +1065,8 @@ export default function RegistrationDetailPage() {
                 ))
               ) : (
                 <EmptyState
-                  title="No provenance records"
-                  description="Record an honest AI or human provenance declaration for this creation."
+                  title="No disclosure records"
+                  description="Record an honest AI or human disclosure for this creation."
                   icon={<Sparkles className="size-5" />}
                   className="border-0 py-8"
                 />

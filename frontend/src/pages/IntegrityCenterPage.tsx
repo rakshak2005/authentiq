@@ -65,8 +65,7 @@ export default function IntegrityCenterPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Integrity center"
-        title="Trust, verified end to end"
+        title="INTEGRITY CENTER"
         description="Live verification of the append-only ledger, the audit hash chain, stored file bytes, and the evidence attached to your workspace. Every value on this page is recomputed from real data."
         actions={
           <Button variant="gradient" size="sm" onClick={recheck} loading={busy}>

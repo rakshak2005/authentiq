@@ -101,7 +101,7 @@ export default function IdeaDetailPage() {
   return (
     <div className="space-y-5">
       <button type="button" onClick={() => navigate("/ideas")} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-3.5" /> Back to idea vault
+        <ArrowLeft className="size-3.5" /> Back to Idea Vault
       </button>
 
       <PageHeader

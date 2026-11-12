@@ -111,7 +111,7 @@ export default function DisputeDetailPage() {
   if (disputeQuery.isLoading) {
     return (
       <div className="space-y-5">
-        <PageHeader eyebrow="Dispute" title="Loading dispute" />
+        <PageHeader title="LOADING DISPUTE" />
         <LoadingBlock rows={6} />
       </div>
     );
@@ -133,7 +133,6 @@ export default function DisputeDetailPage() {
           <Link to="/disputes"><ArrowLeft /> All disputes</Link>
         </Button>
         <PageHeader
-          eyebrow="Dispute resolution"
           title={dispute.reason}
           description={`Dispute ${dispute.dispute_ref} · opened ${relativeTime(dispute.created_at)}`}
           actions={

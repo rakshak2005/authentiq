@@ -252,11 +252,8 @@ export default function PublicRecordsPage() {
 
         <main className="mt-10 flex-1 space-y-8">
           <section className="max-w-3xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-              Public registry
-            </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-              Public records
+              PUBLIC RECORDS
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               Every entry below was published by a creator who selected{" "}

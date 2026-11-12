@@ -92,8 +92,7 @@ export default function TeamsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Collaboration"
-        title="Teams and shared ownership"
+        title="TEAMS"
         description="Invite contributors, record contributions, and finalize an ownership split only when every active member approves. Final allocations enter the append-only ledger."
         actions={
           <Button variant="gradient" size="sm" onClick={() => setCreateOpen(true)}>

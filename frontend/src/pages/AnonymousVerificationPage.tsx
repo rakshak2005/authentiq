@@ -206,8 +206,7 @@ export default function AnonymousVerificationPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Zero-knowledge verification"
-        title="Prove ownership without publishing the work"
+        title="PROVE OWNERSHIP"
         description="Select the original file, generate a fresh challenge, and run a real BN254 Schnorr proof. The verifier learns that you can open the commitment, not what the file contains."
         actions={
           <Badge variant="violet" className="h-7 px-3">

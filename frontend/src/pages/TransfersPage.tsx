@@ -229,8 +229,7 @@ export default function TransfersPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Ownership transfer"
-        title="Hand over a registered creation"
+        title="TRANSFERS"
         description="A transfer needs recipient acceptance and owner confirmation. Each step is written to the audit trail; the completed handover enters the append-only ledger."
         actions={
           <Button variant="gradient" size="sm" onClick={() => { setRegistrationId(owned[0]?.id || ""); setCreateOpen(true); }} disabled={!owned.length}>

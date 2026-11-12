@@ -112,8 +112,7 @@ export default function AuditLogsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Trust center"
-        title="Ledger and audit trail"
+        title="LEDGER & AUDIT"
         description="Inspect the append-only ledger simulation and the hash-chained audit log. Every integrity check runs against stored records and reports the actual result."
         actions={
           <div className="flex flex-wrap gap-2">

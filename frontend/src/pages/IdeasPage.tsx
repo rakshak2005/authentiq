@@ -54,8 +54,7 @@ export default function IdeasPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Idea vault"
-        title="Protect what you have not published"
+        title="IDEA VAULT"
         description="Idea content is encrypted before storage. A Poseidon commitment and timestamp are written to the ledger without revealing the description."
         actions={
           <Button variant="gradient" size="sm" onClick={() => setOpen(true)}>
@@ -84,7 +83,7 @@ export default function IdeasPage() {
       {!ideasQuery.isLoading && !ideasQuery.isError && !ideasQuery.data?.items.length && (
         <EmptyState
           icon={<Lightbulb className="size-5" />}
-          title="Your idea vault is empty"
+          title="Your Idea Vault is empty"
           description="Protect a concept, invention, narrative, or business idea with a committed timestamp. The content stays encrypted and can be revealed later without altering the commitment."
           action={<Button onClick={() => setOpen(true)}>Protect your first idea</Button>}
         />

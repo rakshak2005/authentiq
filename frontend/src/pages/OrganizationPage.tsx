@@ -134,8 +134,7 @@ export default function OrganizationPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Organization"
-        title={data.organization?.name || "Organization"}
+        title={data.organization?.name || "ORGANIZATION"}
         description="Shared workspace for the organization: members, invitations, and every creation registered under it."
         actions={
           <Button asChild variant="gradient" size="sm">

@@ -94,7 +94,7 @@ export default function ProvenancePage() {
         editing_details: editingDetails.trim() || null,
         creation_date: creationDate ? new Date(creationDate).toISOString() : null,
       });
-      toast.success("Provenance record written to the ledger");
+      toast.success("AI disclosure written to the ledger");
       setRecordOpen(false);
       provenanceQuery.refetch();
       queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
@@ -126,12 +126,11 @@ export default function ProvenancePage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="AI disclosure"
-        title="Record how a work was made"
+        title="AI DISCLOSURE"
         description="Document whether AI was used, which tools or models were involved, and the role they played. Your declaration is recorded with the creation."
         actions={
           <Button variant="gradient" size="sm" onClick={() => openRecordDialog()} disabled={!registrations.length}>
-            <PlusCircle /> Add provenance
+            <PlusCircle /> Add disclosure
           </Button>
         }
       />
@@ -167,9 +166,9 @@ export default function ProvenancePage() {
       {!provenanceQuery.isLoading && !provenanceQuery.isError && !records.length && (
         <EmptyState
           icon={<Sparkles className="size-5" />}
-          title="No provenance records yet"
+          title="No disclosure records yet"
           description="Attach a declaration to a registered creation. A commitment of the declaration is written to the append-only ledger while the details stay private to authorized viewers."
-          action={<Button onClick={() => openRecordDialog()} disabled={!registrations.length}>Add provenance</Button>}
+          action={<Button onClick={() => openRecordDialog()} disabled={!registrations.length}>Add disclosure</Button>}
         />
       )}
 
@@ -228,7 +227,7 @@ export default function ProvenancePage() {
       {!!registrations.length && (
         <Card>
           <CardHeader>
-            <CardTitle>Creations without provenance</CardTitle>
+            <CardTitle>Creations without disclosure</CardTitle>
             <CardDescription>Attach a declaration to improve the ownership record. Analysis is optional.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -245,7 +244,7 @@ export default function ProvenancePage() {
               </div>
             ))}
             {registrations.every((item) => records.some((record) => record.registration_id === item.id)) && (
-              <p className="py-3 text-center text-xs text-muted-foreground">Every registration has at least one provenance entry.</p>
+              <p className="py-3 text-center text-xs text-muted-foreground">Every registration has at least one disclosure entry.</p>
             )}
           </CardContent>
         </Card>
@@ -300,7 +299,7 @@ export default function ProvenancePage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setRecordOpen(false)} disabled={busy}>Cancel</Button>
             <Button onClick={recordProvenance} loading={busy} disabled={!registrationId || (declaredAi && !modelName.trim() && !toolName.trim())}>
-              <BrainCircuit /> Record provenance
+              <BrainCircuit /> Record disclosure
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -333,7 +332,7 @@ export default function ProvenancePage() {
       <Dialog open={!!selectedRecord} onOpenChange={(value) => !value && setSelectedRecord(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Provenance record</DialogTitle>
+            <DialogTitle>Disclosure record</DialogTitle>
             <DialogDescription>{selectedRecord?.registration_label} · recorded {formatDate(selectedRecord?.created_at)}</DialogDescription>
           </DialogHeader>
           {selectedRecord && (

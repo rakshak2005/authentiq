@@ -528,8 +528,7 @@ export default function RegisterCreationPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Register"
-        title="Register a new creation"
+        title="REGISTER CREATION"
         description="The browser computes SHA-256 locally. The file is uploaded in verified chunks, scanned, encrypted at rest, committed with Poseidon, and written to the append-only ledger."
         actions={
           <Button asChild variant="ghost" size="sm">

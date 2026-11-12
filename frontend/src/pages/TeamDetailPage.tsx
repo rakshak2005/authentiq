@@ -245,7 +245,7 @@ export default function TeamDetailPage() {
   if (teamQuery.isLoading) {
     return (
       <div className="space-y-5">
-        <PageHeader eyebrow="Team project" title="Loading team" />
+        <PageHeader title="LOADING TEAM" />
         <LoadingBlock rows={6} />
       </div>
     );
@@ -262,7 +262,6 @@ export default function TeamDetailPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Team project"
         title={team.name}
         description={team.description || "No project description provided."}
         actions={

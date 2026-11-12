@@ -75,8 +75,7 @@ export default function DisputesPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Dispute resolution"
-        title="Contested ownership records"
+        title="DISPUTES"
         description="Open a structured dispute, attach evidence, and let an authorized verifier or organization admin review the cryptographic record. The earliest registration is displayed as evidence, not as an automatic legal ruling."
         actions={
           <Button variant="gradient" size="sm" onClick={() => { setRegistrationId(registrations[0]?.id || ""); setOpen(true); }} disabled={!registrations.length}>

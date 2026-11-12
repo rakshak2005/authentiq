@@ -106,8 +106,7 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Notification center"
-        title="Workspace activity"
+        title="NOTIFICATIONS"
         description="Security events, transfer requests, team invitations, ownership approvals, verification outcomes, and dispute updates."
         actions={
           <Button variant="outline" size="sm" onClick={markAll} disabled={!data?.unread}>

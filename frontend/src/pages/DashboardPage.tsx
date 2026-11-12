@@ -46,7 +46,7 @@ export default function DashboardPage() {
   if (summary.isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader eyebrow="Overview" title="Dashboard" description="Loading your workspace summary from the AUTHENTIQ backend." />
+        <PageHeader title="DASHBOARD" description="Loading your workspace summary from the AUTHENTIQ backend." />
         <LoadingBlock rows={6} />
       </div>
     );
@@ -62,8 +62,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Overview"
-        title="Ownership command center"
+        title="DASHBOARD"
         description="Every figure below is computed from your authorized records. No fabricated statistics, no imaginary chain activity."
         actions={
           <>

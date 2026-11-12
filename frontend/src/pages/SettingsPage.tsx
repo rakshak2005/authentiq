@@ -245,8 +245,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Account"
-        title="Settings and security"
+        title="SETTINGS"
         description="Manage your profile, password, active sessions, and organization. Security controls report their real availability."
       />
 
