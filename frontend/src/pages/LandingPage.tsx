@@ -1036,9 +1036,9 @@ function App() {
                 <button
                   className="button lime"
                   type="button"
-                  onClick={() => openAuthModal("register")}
+                  onClick={() => navigate("/login")}
                 >
-                  GET STARTED <Arrow />
+                  SIGN IN <Arrow />
                 </button>
                 <button className="button dark" type="button" onClick={() => navigate("/verify")}>
                   VERIFY OWNERSHIP <Arrow />
