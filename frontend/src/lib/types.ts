@@ -567,6 +567,7 @@ export interface IntegrityOverview {
     missing_ledger_records: string[];
     missing_files: string[];
     duplicate_fingerprints: { sha256: string; count: number }[];
+    ledger_truncation?: string[];
   };
   exposure: {
     open_alerts: number;

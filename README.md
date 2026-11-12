@@ -30,6 +30,7 @@ The site opens at `/` on the AUTHENTIQ landing page. `/login` is the sign-in for
 | Integrity center | Live ledger and audit chain verification, storage and ledger linkage checks, workspace snapshot digest, record-level ledger map |
 | Evidence packets | One-click ZIP with certificate, canonical manifest, ledger receipt, file digest, verification instructions, and a trust score |
 | Ownership trust | Explainable 0-100 evidence score, deterministic ownership DNA grid rendered from the SHA-256 fingerprint, downloadable SVG |
+| Accuracy | Measured component accuracy: fingerprint stability, perceptual and text duplicate detection precision/recall, proof soundness and completeness, authorization decision matrix, ledger tamper detection. Reproducible harness plus regression tests |
 | Ledger | Append-only JSONL simulation with hash chaining, tamper audit, transaction inspection; optional Polygon Amoy adapter |
 | Audit | Append-only hash-chained audit log for security-relevant actions, chain verification endpoint |
 | Operations | Notification inbox, dashboard metrics, global search, health endpoint, structured OpenAPI docs, Docker Compose, pytest suite |
@@ -130,6 +131,28 @@ The seed is idempotent: existing accounts are left untouched. To create the acco
 | Creator / collaborator | `maya@authentiq.dev` | `Authentiq!Team2026` |
 
 The login screen can fill these credentials. Demo accounts and records are explicitly marked `is_demo`.
+
+## Accuracy
+
+AUTHENTIQ is a cryptographic ownership stack, not a trained model, so it has no single accuracy number. Every measurable component is measured against labelled ground truth with the code the product actually runs. The harness is reproducible:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m scripts.accuracy_report
+```
+
+It writes `storage/accuracy-report.json` and `docs/ACCURACY.md`. Latest measured results:
+
+| Component | Result |
+| --- | --- |
+| Exact fingerprint (SHA-256) | stable, collision free over 400 payloads, single-bit changes always detected |
+| Perceptual duplicates (dHash-64, threshold 0.90) | precision 1.0, recall 0.972, F1 0.986 over 384 labelled pairs |
+| Text similarity (4-shingle Jaccard, threshold 0.72) | precision 1.0, recall 1.0 over 120 labelled pairs |
+| Ownership proof (BN254 Schnorr) | completeness 1.0 (40/40 valid proofs accepted), soundness 1.0 (320/320 forgeries rejected) |
+| Authorization decisions | 20/20 live API decisions matched the documented policy |
+| Ledger tamper detection | 32/32 silent edits detected; tail removal detected by the database cross-check |
+
+`backend/tests/test_accuracy_report.py` keeps these thresholds under regression, so a drop in detection quality fails the test suite instead of shipping quietly.
 
 ## Public anonymous verification
 

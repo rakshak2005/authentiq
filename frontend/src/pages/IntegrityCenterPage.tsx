@@ -58,6 +58,7 @@ export default function IntegrityCenterPage() {
     data.checks.missing_files.length +
     data.checks.missing_ledger_records.length +
     data.checks.duplicate_fingerprints.length +
+    (data.checks.ledger_truncation?.length ?? 0) +
     data.ledger.errors.length +
     data.audit_chain.errors.length;
 
@@ -209,6 +210,15 @@ export default function IntegrityCenterPage() {
               data.checks.duplicate_fingerprints.length === 0
                 ? "No duplicate fingerprints inside your workspace."
                 : `${data.checks.duplicate_fingerprints.length} duplicated fingerprint(s) found.`
+            }
+          />
+          <CheckTile
+            ok={(data.checks.ledger_truncation?.length ?? 0) === 0}
+            title="Ledger completeness"
+            detail={
+              (data.checks.ledger_truncation?.length ?? 0) === 0
+                ? "The ledger file matches the independent database copy, so no record was removed."
+                : data.checks.ledger_truncation!.join(" ")
             }
           />
         </CardContent>

@@ -14,6 +14,7 @@ from app.models import (
     Dispute,
     FileMetadata,
     Idea,
+    LedgerTransaction,
     Notification,
     Registration,
     TeamProject,
@@ -361,6 +362,30 @@ def build_evidence_packet(
     return buffer.getvalue()
 
 
+def ledger_truncation_check(db: Session, ledger_audit: dict) -> list[str]:
+    """Detect a truncated ledger file by comparing it with the database copy.
+
+    A hash chain alone cannot detect the removal of the newest record: the
+    remaining records still form a valid chain. The database keeps an
+    independent copy of every ledger record, so comparing the record count and
+    the head hash exposes a truncation.
+    """
+    issues: list[str] = []
+    file_records = ledger_audit.get("records")
+    db_records = db.execute(select(func.count()).select_from(LedgerTransaction)).scalar_one()
+    if isinstance(file_records, int) and file_records < db_records:
+        issues.append(
+            f"Ledger file holds {file_records} record(s) while the database holds {db_records}. The tail was removed."
+        )
+    db_head = db.execute(
+        select(LedgerTransaction).order_by(LedgerTransaction.block_number.desc()).limit(1)
+    ).scalar_one_or_none()
+    file_head = ledger_audit.get("last_hash")
+    if db_head is not None and file_head and db_head.record_hash != file_head:
+        issues.append("Ledger head hash differs between the ledger file and the database copy.")
+    return issues
+
+
 def workspace_overview(db: Session, user: Registration) -> dict:
     ledger_audit = ledger_service.audit()
     status = ledger_service.status()
@@ -413,6 +438,7 @@ def workspace_overview(db: Session, user: Registration) -> dict:
             "missing_ledger_records": missing_ledger,
             "missing_files": missing_files,
             "duplicate_fingerprints": [{"sha256": row[0], "count": row[1]} for row in duplicate_groups],
+            "ledger_truncation": ledger_truncation_check(db, ledger_audit),
         },
         "workspace_digest": _digest(snapshot),
         "records": [

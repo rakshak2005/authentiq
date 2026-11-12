@@ -1,0 +1,618 @@
+{
+  "generated_at": "2026-11-12T10:01:20.520801+00:00",
+  "application": "AUTHENTIQ",
+  "note": "AUTHENTIQ is a cryptographic ownership stack, not a trained model. Accuracy is reported per measurable component.",
+  "sections": {
+    "fingerprint": {
+      "title": "Exact fingerprint accuracy (SHA-256)",
+      "summary": "Deterministic digests over distinct payloads: stable, collision free.",
+      "metrics": {
+        "samples": 400,
+        "digest_stability": true,
+        "collision_free": true,
+        "single_bit_change_detected": true,
+        "minimum_observed_hamming_distance_bits": 88,
+        "pair_classification": {
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "tn": 400,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "accuracy": 1.0,
+          "pairs": 400
+        }
+      }
+    },
+    "perceptual": {
+      "title": "Perceptual duplicate detection accuracy (dHash-64)",
+      "summary": "At the shipped threshold 0.9: precision 1.0, recall 0.9722, F1 0.9859 over 384 labelled pairs.",
+      "metrics": {
+        "threshold": 0.9,
+        "shipped_threshold": {
+          "tp": 210,
+          "fp": 0,
+          "fn": 6,
+          "tn": 168,
+          "precision": 1.0,
+          "recall": 0.9722,
+          "f1": 0.9859,
+          "accuracy": 0.9844,
+          "pairs": 384
+        },
+        "threshold_sweep": {
+          "0.70": {
+            "tp": 216,
+            "fp": 8,
+            "fn": 0,
+            "tn": 160,
+            "precision": 0.9643,
+            "recall": 1.0,
+            "f1": 0.9818,
+            "accuracy": 0.9792,
+            "pairs": 384
+          },
+          "0.75": {
+            "tp": 216,
+            "fp": 4,
+            "fn": 0,
+            "tn": 164,
+            "precision": 0.9818,
+            "recall": 1.0,
+            "f1": 0.9908,
+            "accuracy": 0.9896,
+            "pairs": 384
+          },
+          "0.80": {
+            "tp": 216,
+            "fp": 0,
+            "fn": 0,
+            "tn": 168,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 384
+          },
+          "0.85": {
+            "tp": 214,
+            "fp": 0,
+            "fn": 2,
+            "tn": 168,
+            "precision": 1.0,
+            "recall": 0.9907,
+            "f1": 0.9953,
+            "accuracy": 0.9948,
+            "pairs": 384
+          },
+          "0.88": {
+            "tp": 212,
+            "fp": 0,
+            "fn": 4,
+            "tn": 168,
+            "precision": 1.0,
+            "recall": 0.9815,
+            "f1": 0.9907,
+            "accuracy": 0.9896,
+            "pairs": 384
+          },
+          "0.90": {
+            "tp": 210,
+            "fp": 0,
+            "fn": 6,
+            "tn": 168,
+            "precision": 1.0,
+            "recall": 0.9722,
+            "f1": 0.9859,
+            "accuracy": 0.9844,
+            "pairs": 384
+          },
+          "0.93": {
+            "tp": 200,
+            "fp": 0,
+            "fn": 16,
+            "tn": 168,
+            "precision": 1.0,
+            "recall": 0.9259,
+            "f1": 0.9615,
+            "accuracy": 0.9583,
+            "pairs": 384
+          },
+          "0.95": {
+            "tp": 193,
+            "fp": 0,
+            "fn": 23,
+            "tn": 168,
+            "precision": 1.0,
+            "recall": 0.8935,
+            "f1": 0.9438,
+            "accuracy": 0.9401,
+            "pairs": 384
+          },
+          "0.97": {
+            "tp": 171,
+            "fp": 0,
+            "fn": 45,
+            "tn": 168,
+            "precision": 1.0,
+            "recall": 0.7917,
+            "f1": 0.8837,
+            "accuracy": 0.8828,
+            "pairs": 384
+          },
+          "1.00": {
+            "tp": 119,
+            "fp": 0,
+            "fn": 97,
+            "tn": 168,
+            "precision": 1.0,
+            "recall": 0.5509,
+            "f1": 0.7104,
+            "accuracy": 0.7474,
+            "pairs": 384
+          }
+        },
+        "pairwise_ranking_accuracy": 1.0,
+        "mean_positive_similarity": 0.9825,
+        "mean_negative_similarity": 0.4874,
+        "per_variant": {
+          "lossless re-encode": {
+            "tp": 24,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 24
+          },
+          "jpeg quality 90": {
+            "tp": 24,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 24
+          },
+          "jpeg quality 70": {
+            "tp": 24,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 24
+          },
+          "resized 50%": {
+            "tp": 24,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 24
+          },
+          "brightness +15": {
+            "tp": 24,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 24
+          },
+          "brightness -15": {
+            "tp": 24,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 24
+          },
+          "blur radius 1.0": {
+            "tp": 24,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 24
+          },
+          "crop 3 percent": {
+            "tp": 18,
+            "fp": 0,
+            "fn": 6,
+            "tn": 0,
+            "precision": 1.0,
+            "recall": 0.75,
+            "f1": 0.8571,
+            "accuracy": 0.75,
+            "pairs": 24
+          },
+          "saved as jpeg then re-read": {
+            "tp": 24,
+            "fp": 0,
+            "fn": 0,
+            "tn": 0,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 24
+          }
+        }
+      }
+    },
+    "text": {
+      "title": "Text similarity detection accuracy (4-shingle Jaccard)",
+      "summary": "At the shipped threshold 0.72: precision 1.0, recall 1.0, F1 1.0 over 120 labelled pairs.",
+      "metrics": {
+        "threshold": 0.72,
+        "shipped_threshold": {
+          "tp": 80,
+          "fp": 0,
+          "fn": 0,
+          "tn": 40,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "accuracy": 1.0,
+          "pairs": 120
+        },
+        "threshold_sweep": {
+          "0.30": {
+            "tp": 80,
+            "fp": 0,
+            "fn": 0,
+            "tn": 40,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 120
+          },
+          "0.40": {
+            "tp": 80,
+            "fp": 0,
+            "fn": 0,
+            "tn": 40,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 120
+          },
+          "0.50": {
+            "tp": 80,
+            "fp": 0,
+            "fn": 0,
+            "tn": 40,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 120
+          },
+          "0.60": {
+            "tp": 80,
+            "fp": 0,
+            "fn": 0,
+            "tn": 40,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 120
+          },
+          "0.72": {
+            "tp": 80,
+            "fp": 0,
+            "fn": 0,
+            "tn": 40,
+            "precision": 1.0,
+            "recall": 1.0,
+            "f1": 1.0,
+            "accuracy": 1.0,
+            "pairs": 120
+          },
+          "0.80": {
+            "tp": 40,
+            "fp": 0,
+            "fn": 40,
+            "tn": 40,
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6667,
+            "accuracy": 0.6667,
+            "pairs": 120
+          },
+          "0.90": {
+            "tp": 40,
+            "fp": 0,
+            "fn": 40,
+            "tn": 40,
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6667,
+            "accuracy": 0.6667,
+            "pairs": 120
+          }
+        },
+        "pairwise_ranking_accuracy": 1.0,
+        "mean_positive_similarity": 0.8455,
+        "mean_negative_similarity": 0.0
+      }
+    },
+    "proof": {
+      "title": "Ownership proof accuracy (BN254 Schnorr)",
+      "summary": "Completeness 1.0 (40/40 valid proofs accepted), soundness 1.0 (320/320 forgeries rejected).",
+      "metrics": {
+        "trials": 40,
+        "valid_proofs": 40,
+        "valid_accepted": 40,
+        "completeness": 1.0,
+        "invalid_proofs": 320,
+        "invalid_accepted": 0,
+        "soundness": 1.0,
+        "rejection_rate_by_attack": {
+          "tampered response z1": {
+            "trials": 40,
+            "accepted": 0
+          },
+          "forged challenge": {
+            "trials": 40,
+            "accepted": 0
+          },
+          "forged anchor point": {
+            "trials": 40,
+            "accepted": 0
+          },
+          "wrong secret (forged proof)": {
+            "trials": 40,
+            "accepted": 0
+          },
+          "wrong file fingerprint": {
+            "trials": 40,
+            "accepted": 0
+          },
+          "wrong registration id": {
+            "trials": 40,
+            "accepted": 0
+          },
+          "wrong challenge nonce": {
+            "trials": 40,
+            "accepted": 0
+          },
+          "wrong commitment": {
+            "trials": 40,
+            "accepted": 0
+          }
+        }
+      }
+    },
+    "authorization": {
+      "title": "Authorization decision accuracy (live API)",
+      "summary": "20/20 authorization decisions matched the expected policy (1.0).",
+      "metrics": {
+        "cases": 20,
+        "matched": 20,
+        "mismatched": 0,
+        "accuracy": 1.0,
+        "mismatches": [],
+        "decisions": [
+          {
+            "case": "owner reads own record",
+            "method": "GET",
+            "path": "/api/registrations/AQ-2026-D3CED678",
+            "expected_status": 200,
+            "actual_status": 200,
+            "match": true
+          },
+          {
+            "case": "organization member reads record",
+            "method": "GET",
+            "path": "/api/registrations/AQ-2026-D3CED678",
+            "expected_status": 200,
+            "actual_status": 200,
+            "match": true
+          },
+          {
+            "case": "pending recipient reads record",
+            "method": "GET",
+            "path": "/api/registrations/AQ-2026-D3CED678",
+            "expected_status": 200,
+            "actual_status": 200,
+            "match": true
+          },
+          {
+            "case": "outsider is denied record",
+            "method": "GET",
+            "path": "/api/registrations/AQ-2026-D3CED678",
+            "expected_status": 403,
+            "actual_status": 403,
+            "match": true
+          },
+          {
+            "case": "anonymous is refused record",
+            "method": "GET",
+            "path": "/api/registrations/AQ-2026-D3CED678",
+            "expected_status": 401,
+            "actual_status": 401,
+            "match": true
+          },
+          {
+            "case": "owner downloads original",
+            "method": "GET",
+            "path": "/api/registrations/AQ-2026-D3CED678/file",
+            "expected_status": 200,
+            "actual_status": 200,
+            "match": true
+          },
+          {
+            "case": "outsider cannot download original",
+            "method": "GET",
+            "path": "/api/registrations/AQ-2026-D3CED678/file",
+            "expected_status": 403,
+            "actual_status": 403,
+            "match": true
+          },
+          {
+            "case": "owner reveals private key",
+            "method": "GET",
+            "path": "/api/registrations/AQ-2026-D3CED678/verification-key",
+            "expected_status": 200,
+            "actual_status": 200,
+            "match": true
+          },
+          {
+            "case": "pending recipient cannot reveal private key",
+            "method": "GET",
+            "path": "/api/registrations/AQ-2026-D3CED678/verification-key",
+            "expected_status": 403,
+            "actual_status": 403,
+            "match": true
+          },
+          {
+            "case": "org member cannot reveal private key",
+            "method": "GET",
+            "path": "/api/registrations/AQ-2026-D3CED678/verification-key",
+            "expected_status": 403,
+            "actual_status": 403,
+            "match": true
+          },
+          {
+            "case": "owner proposes a transfer",
+            "method": "POST",
+            "path": "/api/transfers",
+            "expected_status": 201,
+            "actual_status": 201,
+            "match": true
+          },
+          {
+            "case": "pending recipient cannot propose a transfer",
+            "method": "POST",
+            "path": "/api/transfers",
+            "expected_status": 403,
+            "actual_status": 403,
+            "match": true
+          },
+          {
+            "case": "site admin opens the console",
+            "method": "GET",
+            "path": "/api/admin/users",
+            "expected_status": 200,
+            "actual_status": 200,
+            "match": true
+          },
+          {
+            "case": "owner is denied the console",
+            "method": "GET",
+            "path": "/api/admin/users",
+            "expected_status": 403,
+            "actual_status": 403,
+            "match": true
+          },
+          {
+            "case": "anonymous is refused the console",
+            "method": "GET",
+            "path": "/api/admin/users",
+            "expected_status": 401,
+            "actual_status": 401,
+            "match": true
+          },
+          {
+            "case": "owner reads the dashboard",
+            "method": "GET",
+            "path": "/api/dashboard/summary",
+            "expected_status": 200,
+            "actual_status": 200,
+            "match": true
+          },
+          {
+            "case": "any account gets its own dashboard",
+            "method": "GET",
+            "path": "/api/dashboard/summary",
+            "expected_status": 200,
+            "actual_status": 200,
+            "match": true
+          },
+          {
+            "case": "public anonymous challenge is open",
+            "method": "POST",
+            "path": "/api/public/verify/anonymous/challenge",
+            "expected_status": 200,
+            "actual_status": 200,
+            "match": true
+          },
+          {
+            "case": "public fingerprint existence check is open",
+            "method": "POST",
+            "path": "/api/public/fingerprints/check",
+            "expected_status": 200,
+            "actual_status": 200,
+            "match": true
+          },
+          {
+            "case": "public records listing is open",
+            "method": "GET",
+            "path": "/api/public/records",
+            "expected_status": 200,
+            "actual_status": 200,
+            "match": true
+          }
+        ]
+      }
+    },
+    "ledger": {
+      "title": "Ledger and audit tamper detection",
+      "summary": "Clean chain valid: True. Detection rate for silent edits: 1.0 (32/32). Tail removal seen by the chain alone: False; seen by the database cross-check: True.",
+      "metrics": {
+        "clean_chain_valid": true,
+        "clean_records": 8,
+        "mutations_tested": 32,
+        "mutations_detected": 32,
+        "detection_rate": 1.0,
+        "truncation_detected_by_chain": false,
+        "truncation_detected_by_database_cross_check": true,
+        "truncation_issues": [
+          "Ledger file holds 7 record(s) while the database holds 8. The tail was removed.",
+          "Ledger head hash differs between the ledger file and the database copy."
+        ],
+        "detection_by_class": {
+          "payload edited": {
+            "trials": 8,
+            "detected": 8
+          },
+          "record hash edited": {
+            "trials": 8,
+            "detected": 8
+          },
+          "payload digest edited": {
+            "trials": 8,
+            "detected": 8
+          },
+          "block number edited": {
+            "trials": 8,
+            "detected": 8
+          }
+        }
+      }
+    }
+  }
+}
