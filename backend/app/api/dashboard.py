@@ -1,10 +1,11 @@
 from collections import Counter
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from app.core.clock import reader_now, to_reader_time
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models import (
@@ -24,7 +25,6 @@ from app.models import (
     ZkpProof,
 )
 from app.ledger import ledger_service
-from app.security.crypto import utcnow
 from app.services.serializers import (
     alert_out,
     audit_out,
@@ -88,7 +88,11 @@ def _entity_ids(db: Session, user: User) -> list[str]:
 
 
 @router.get("/summary")
-def summary(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def summary(
+    tz_offset: int = Query(default=0, ge=-840, le=840, description="Minutes east of UTC used by the reader."),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     registrations, pending_ids = _scoped_registrations(db, user)
     registration_ids = [item.id for item in registrations]
     public_ids = [item.registration_id for item in registrations]
@@ -127,7 +131,7 @@ def summary(db: Session = Depends(get_db), user: User = Depends(get_current_user
         )
     ).scalar_one()
 
-    now = utcnow()
+    now = reader_now(tz_offset)
     monthly = []
     parsed_months = []
     for offset in range(5, -1, -1):
@@ -138,7 +142,15 @@ def summary(db: Session = Depends(get_db), user: User = Depends(get_current_user
             year -= 1
         parsed_months.append((year, month))
     for year, month in parsed_months:
-        count = len([item for item in registrations if item.registered_at.year == year and item.registered_at.month == month])
+        count = len(
+            [
+                item
+                for item in registrations
+                if (moment := to_reader_time(item.registered_at, tz_offset)) is not None
+                and moment.year == year
+                and moment.month == month
+            ]
+        )
         monthly.append({"label": f"{year}-{month:02d}", "registrations": count})
     asset_types = Counter(item.asset_type for item in registrations)
     ledger_status = ledger_service.status()
@@ -147,9 +159,10 @@ def summary(db: Session = Depends(get_db), user: User = Depends(get_current_user
     heatmap_start = (now - timedelta(days=181)).date()
 
     def bump(value, key):
-        if value is None:
+        moment = to_reader_time(value, tz_offset)
+        if moment is None:
             return
-        day = value.date()
+        day = moment.date()
         if day < heatmap_start:
             return
         entry = heatmap_days.setdefault(day.isoformat(), {"registrations": 0, "ideas": 0, "proofs": 0, "versions": 0})

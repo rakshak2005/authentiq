@@ -199,7 +199,12 @@ def download_version(
 
 
 @router.get("/{version_id}/certificate")
-def version_certificate(version_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def version_certificate(
+    version_id: str,
+    tz_offset: int = Query(default=0, ge=-840, le=840),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     version = _version_or_404(db, version_id)
     registration = db.get(Registration, version.registration_id)
     require_registration_access(user, registration, db)
@@ -218,6 +223,7 @@ def version_certificate(version_id: str, db: Session = Depends(get_db), user: Us
         shim,
         contributor.display_name if contributor else "AUTHENTIQ Creator",
         verification_url_for(registration.registration_id),
+        tz_offset,
     )
     append_audit(
         db,

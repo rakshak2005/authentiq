@@ -21,6 +21,7 @@ import { useAuth } from "@/context/AuthContext";
 import { hasDuplicates, perceptualHash, type DuplicateMatch, type DuplicateReport } from "@/lib/duplicates";
 import { uploadFileChunked, type UploadProgress } from "@/lib/upload";
 import { assetTypeOptions, formatBytes, formatDate, privacyOptions, titleCase } from "@/lib/format";
+import { withReaderTimezone } from "@/lib/time";
 import type { Registration, Team } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -368,7 +369,7 @@ export default function RegisterCreationPage() {
     if (!result) return;
     setCertificateBusy(true);
     try {
-      await downloadResponse(`/registrations/${result.registration.id}/certificate`, `AUTHENTIQ-${result.registration.registration_id}.pdf`);
+      await downloadResponse(withReaderTimezone(`/registrations/${result.registration.id}/certificate`), `AUTHENTIQ-${result.registration.registration_id}.pdf`);
       toast.success("Certificate downloaded");
     } catch (caught) {
       toast.error(extractErrorMessage(caught));

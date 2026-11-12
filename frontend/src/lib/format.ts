@@ -1,9 +1,23 @@
 import { format, formatDistanceToNow, parseISO } from "date-fns";
 
+const HAS_ZONE = /(?:Z|[+-]\d{2}:?\d{2})$/i;
+
+/**
+ * The API always sends UTC with an explicit offset. A value that arrives
+ * without one is still UTC, so it must not be read as local time or a record
+ * would move to the wrong day.
+ */
+function parseTimestamp(value: string) {
+  const trimmed = value.trim();
+  if (HAS_ZONE.test(trimmed)) return parseISO(trimmed);
+  if (!trimmed.includes("T")) return parseISO(`${trimmed}T00:00:00Z`);
+  return parseISO(`${trimmed}Z`);
+}
+
 export function formatDate(value?: string | null, pattern = "MMM d, yyyy HH:mm") {
   if (!value) return "Not available";
   try {
-    return format(parseISO(value), pattern);
+    return format(parseTimestamp(value), pattern);
   } catch {
     return value;
   }
@@ -16,7 +30,7 @@ export function formatShortDate(value?: string | null) {
 export function relativeTime(value?: string | null) {
   if (!value) return "unknown";
   try {
-    return formatDistanceToNow(parseISO(value), { addSuffix: true });
+    return formatDistanceToNow(parseTimestamp(value), { addSuffix: true });
   } catch {
     return value;
   }

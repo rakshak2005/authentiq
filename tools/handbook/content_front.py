@@ -103,7 +103,7 @@ def document_map() -> list:
         ),
         callout(
             "A note on numbers",
-            "Exact counts in this handbook refer to the current implementation: 76 backend tests, 30 application tables, 20 ranked features, 29 application routes, five roles, and three demo accounts. If you add code, re-run the checks in chapter 41 before trusting these numbers again.",
+            "Exact counts in this handbook refer to the current implementation: 82 backend tests, 30 application tables, 20 ranked features, 29 application routes, five roles, and three demo accounts. If you add code, re-run the checks in chapter 41 before trusting these numbers again.",
         ),
         gap(10),
         p("The table of contents that follows lists every chapter with its page number. Part openers repeat the chapter list so you can navigate a printed copy without flipping back.", "small"),

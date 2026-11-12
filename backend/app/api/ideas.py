@@ -3,7 +3,7 @@ import json
 import secrets
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -240,10 +240,15 @@ def reveal_idea(identifier: str, db: Session = Depends(get_db), user: User = Dep
 
 
 @router.get("/{identifier}/certificate")
-def idea_certificate(identifier: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def idea_certificate(
+    identifier: str,
+    tz_offset: int = Query(default=0, ge=-840, le=840),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     idea = _idea_or_404(db, identifier)
     _require_owner(user, idea)
-    pdf = build_idea_certificate(idea, user.display_name, verification_url_for(idea.idea_ref))
+    pdf = build_idea_certificate(idea, user.display_name, verification_url_for(idea.idea_ref), tz_offset)
     append_audit(
         db,
         "idea_certificate_downloaded",

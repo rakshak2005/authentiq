@@ -25,6 +25,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { api } from "@/lib/api";
 import type { AuditEntry, DashboardActivity, DashboardSummary, LedgerStatus } from "@/lib/types";
 import { formatBytes, formatDate, humanizeAction, relativeTime, titleCase } from "@/lib/format";
+import { withReaderTimezone } from "@/lib/time";
 
 interface AuditChain {
   valid: boolean;
@@ -37,7 +38,7 @@ interface AuditChain {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const summary = useQuery({ queryKey: ["dashboard-summary"], queryFn: () => api.get<DashboardSummary>("/dashboard/summary") });
+  const summary = useQuery({ queryKey: ["dashboard-summary"], queryFn: () => api.get<DashboardSummary>(withReaderTimezone("/dashboard/summary")) });
   const activity = useQuery({ queryKey: ["dashboard-activity"], queryFn: () => api.get<DashboardActivity>("/dashboard/activity") });
   const ledger = useQuery({ queryKey: ["ledger-status"], queryFn: () => api.get<LedgerStatus>("/ledger/status") });
   const audit = useQuery({ queryKey: ["audit-chain"], queryFn: () => api.get<AuditChain>("/audit-logs/verify") });

@@ -216,6 +216,28 @@ The build runs TypeScript checking and a Vite production build.
 
 Optional chain and circuit packages have their own test and build commands in their READMEs. They are not required for the application to run.
 
+## Dates and timezones
+
+Every timestamp is stored and transported in UTC, which is the right contract for an audit trail. The day a record belongs to is decided by the reader's timezone, so a record registered at 00:35 in India is filed under that day and not under the previous UTC day.
+
+The browser sends its UTC offset with the requests that need it (`tz_offset`, in minutes), and the API uses it for the dashboard day and month buckets and for the timestamp printed on a certificate or an evidence packet. The interface renders the same timestamps with `date-fns` in the browser's timezone, and a timestamp that arrives without an offset is read as UTC rather than as local time.
+
+### Moving a workspace onto the day of the demo
+
+A workspace is built while the team works on it, so the same workspace is often shown on a later day and every record carries the date it was created on. The rebase tool moves the timeline onto the day of the demo:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m scripts.rebase_timestamps --target-date 2026-11-12
+.\.venv\Scripts\python.exe -m scripts.rebase_timestamps --dry-run
+```
+
+It maps every system timestamp onto the target day, keeps the order of the events and the gaps between them, and leaves the declared creation date of a work alone, because that date belongs to the work and not to the platform. The audit hash chain and the append-only ledger chain are rebuilt, so the integrity centre still reports "Intact". A JSON backup of every touched table and of the ledger file is written to `storage/backups/` first, and it can be restored with:
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.rebase_timestamps --restore storage\backups\rebase-2026-11-12-20261112-160021
+```
+
 ## Docker Compose
 
 The stack connects to an external PostgreSQL database (Neon by default). Put the connection string, the secret key, and the rest of the settings in `.env`, then start:

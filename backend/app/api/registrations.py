@@ -316,7 +316,12 @@ def download_registration_file(
 
 
 @router.get("/{identifier}/certificate")
-def download_certificate(identifier: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def download_certificate(
+    identifier: str,
+    tz_offset: int = Query(default=0, ge=-840, le=840),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     registration = registration_or_404(db, identifier)
     require_registration_access(user, registration, db)
     owner = db.get(User, registration.user_id)
@@ -324,6 +329,7 @@ def download_certificate(identifier: str, db: Session = Depends(get_db), user: U
         registration,
         owner.display_name if owner else "AUTHENTIQ Creator",
         verification_url_for(registration.registration_id),
+        tz_offset,
     )
     append_audit(
         db,
@@ -355,7 +361,12 @@ def get_trust_score(identifier: str, db: Session = Depends(get_db), user: User =
 
 
 @router.get("/{identifier}/evidence-packet")
-def download_evidence_packet(identifier: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def download_evidence_packet(
+    identifier: str,
+    tz_offset: int = Query(default=0, ge=-840, le=840),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     registration = registration_or_404(db, identifier)
     require_registration_access(user, registration, db)
     metadata = db.execute(
@@ -371,6 +382,7 @@ def download_evidence_packet(identifier: str, db: Session = Depends(get_db), use
         metadata,
         owner.display_name if owner else "AUTHENTIQ Creator",
         proofs,
+        tz_offset,
     )
     append_audit(
         db,

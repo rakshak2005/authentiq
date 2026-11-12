@@ -306,11 +306,12 @@ def build_evidence_packet(
     metadata: FileMetadata | None,
     owner_name: str,
     proofs: list[ZkpProof],
+    tz_offset_minutes: int = 0,
 ) -> bytes:
     trust = trust_report(db, registration, metadata)
     manifest = evidence_manifest(db, registration, metadata, owner_name, proofs, trust)
     certificate = build_registration_certificate(
-        registration, owner_name, verification_url_for(registration.registration_id)
+        registration, owner_name, verification_url_for(registration.registration_id), tz_offset_minutes
     )
     ledger_record = ledger_service.verify_record(registration.ledger_tx_id) if registration.ledger_tx_id else None
     receipt = {

@@ -1,4 +1,5 @@
 from pathlib import Path
+import tempfile
 
 from reportlab.lib import colors
 from reportlab.lib.styles import ParagraphStyle
@@ -173,4 +174,5 @@ def build_smoke(output: Path) -> None:
 
 
 if __name__ == "__main__":
-    build_smoke(Path(__file__).resolve().parents[2] / "_smoke.pdf")
+    # Written outside the repository: build artifacts stay out of version control.
+    build_smoke(Path(tempfile.gettempdir()) / "authentiq-handbook-smoke.pdf")

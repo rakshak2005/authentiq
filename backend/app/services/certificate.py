@@ -8,6 +8,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
+from app.core.clock import reader_stamp
 from app.core.config import settings
 
 NAVY = HexColor("#FFFFFF")
@@ -48,7 +49,12 @@ def _build_qr(url: str) -> ImageReader:
     return ImageReader(buffer)
 
 
-def build_registration_certificate(registration, creator_name: str, verification_url: str) -> bytes:
+def build_registration_certificate(
+    registration,
+    creator_name: str,
+    verification_url: str,
+    tz_offset_minutes: int = 0,
+) -> bytes:
     buffer = __import__("io").BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
@@ -84,7 +90,7 @@ def build_registration_certificate(registration, creator_name: str, verification
         ("Ownership commitment", registration.commitment),
         ("Poseidon commitment", registration.poseidon_commitment),
         ("Creator", creator_name),
-        ("Registration timestamp", registration.registered_at.strftime("%Y-%m-%d %H:%M:%S UTC")),
+        ("Registration timestamp", reader_stamp(registration.registered_at, tz_offset_minutes)),
         ("Ledger transaction ID", registration.ledger_tx_id or "Pending"),
         ("Ledger mode", registration.ledger_mode),
         ("Network", "AUTHENTIQ Local Ledger" if registration.ledger_mode == "simulation" else "Polygon Amoy"),
@@ -127,7 +133,12 @@ def build_registration_certificate(registration, creator_name: str, verification
     return buffer.getvalue()
 
 
-def build_idea_certificate(idea, creator_name: str, verification_url: str) -> bytes:
+def build_idea_certificate(
+    idea,
+    creator_name: str,
+    verification_url: str,
+    tz_offset_minutes: int = 0,
+) -> bytes:
     buffer = __import__("io").BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
@@ -156,7 +167,7 @@ def build_idea_certificate(idea, creator_name: str, verification_url: str) -> by
         ("Idea title", idea.title),
         ("Commitment", idea.commitment),
         ("Creator", creator_name),
-        ("Protected at", idea.created_at.strftime("%Y-%m-%d %H:%M:%S UTC")),
+        ("Protected at", reader_stamp(idea.created_at, tz_offset_minutes)),
         ("Ledger transaction ID", idea.ledger_tx_id or "Pending"),
         ("Ledger mode", idea.ledger_mode),
         ("Privacy setting", idea.privacy),

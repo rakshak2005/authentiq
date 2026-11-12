@@ -48,6 +48,7 @@ import { Progress } from "@/components/ui/progress";
 import { api, downloadResponse, extractErrorMessage, fetchObjectUrl, sha256Hex } from "@/lib/api";
 import { uploadFileChunked, type UploadProgress } from "@/lib/upload";
 import { formatBytes, formatDate, percent, relativeTime, titleCase } from "@/lib/format";
+import { withReaderTimezone } from "@/lib/time";
 import type { AlertItem, OwnershipChain, ProofResult, Registration, ShareItem, TrustReport, VersionItem } from "@/lib/types";
 
 type RegistrationDetail = Registration & { has_private_access?: boolean };
@@ -287,7 +288,7 @@ export default function RegistrationDetailPage() {
 
   const downloadCertificate = async () => {
     try {
-      await downloadResponse(`/registrations/${encodeURIComponent(id)}/certificate`, `AUTHENTIQ-${registration.registration_id}.pdf`);
+      await downloadResponse(withReaderTimezone(`/registrations/${encodeURIComponent(id)}/certificate`), `AUTHENTIQ-${registration.registration_id}.pdf`);
       toast.success("Certificate downloaded");
     } catch (caught) {
       toast.error(extractErrorMessage(caught));
@@ -298,7 +299,7 @@ export default function RegistrationDetailPage() {
     setPacketBusy(true);
     try {
       await downloadResponse(
-        `/registrations/${encodeURIComponent(id)}/evidence-packet`,
+        withReaderTimezone(`/registrations/${encodeURIComponent(id)}/evidence-packet`),
         `AUTHENTIQ-${registration.registration_id}-evidence.zip`,
       );
       toast.success("Evidence packet downloaded");
@@ -872,7 +873,7 @@ export default function RegistrationDetailPage() {
                       size="sm"
                       variant="outline"
                       onClick={() =>
-                        downloadResponse(`/versions/${version.id}/certificate`, `AUTHENTIQ-${registration.registration_id}-V${version.version_no}.pdf`)
+                        downloadResponse(withReaderTimezone(`/versions/${version.id}/certificate`), `AUTHENTIQ-${registration.registration_id}-V${version.version_no}.pdf`)
                           .then(() => toast.success("Version certificate downloaded"))
                           .catch((caught) => toast.error(extractErrorMessage(caught)))
                       }

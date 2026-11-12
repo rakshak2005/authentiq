@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { api, downloadResponse, extractErrorMessage } from "@/lib/api";
 import type { Idea } from "@/lib/types";
 import { formatDate, relativeTime, titleCase } from "@/lib/format";
+import { withReaderTimezone } from "@/lib/time";
 
 interface IdeaDetail extends Idea {
   revisions: { id: string; revision_no: number; notes: string; commitment: string; ledger_tx_id?: string | null; created_at: string }[];
@@ -116,7 +117,7 @@ export default function IdeaDetailPage() {
               variant="outline"
               size="sm"
               onClick={() =>
-                downloadResponse(`/ideas/${encodeURIComponent(id)}/certificate`, `AUTHENTIQ-${idea.idea_ref}.pdf`)
+                downloadResponse(withReaderTimezone(`/ideas/${encodeURIComponent(id)}/certificate`), `AUTHENTIQ-${idea.idea_ref}.pdf`)
                   .then(() => toast.success("Idea certificate downloaded"))
                   .catch((caught) => toast.error(extractErrorMessage(caught)))
               }

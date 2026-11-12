@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import re
 
 from reportlab.lib import colors
@@ -31,7 +32,14 @@ from .theme import (
     TURRET,
 )
 
-OUTPUT = Path(__file__).resolve().parents[2] / "AUTHENTIQ-Complete-Guide.pdf"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+# The guide is a deliverable, not a source file. It is written outside the
+# repository by default so it never shows up as an untracked artifact, and it
+# can be redirected with AUTHENTIQ_GUIDE_OUTPUT or --output.
+OUTPUT = Path(
+    os.environ.get("AUTHENTIQ_GUIDE_OUTPUT")
+    or (REPO_ROOT.parent / "AUTHENTIQ-Complete-Guide.pdf")
+)
 
 
 def flatten(items):
@@ -175,9 +183,11 @@ def contents_page() -> list:
     ]
 
 
-def build() -> Path:
+def build(output: Path | None = None) -> Path:
+    target = Path(output) if output else OUTPUT
+    target.parent.mkdir(parents=True, exist_ok=True)
     doc = HandbookDoc(
-        str(OUTPUT),
+        str(target),
         pagesize=(PAGE_W, PAGE_H),
         leftMargin=MARGIN_X,
         rightMargin=MARGIN_X,
@@ -219,10 +229,19 @@ def build() -> Path:
     ]
 
     doc.multiBuild(flatten(story))
-    print(f"Wrote {OUTPUT}")
+    print(f"Wrote {target}")
     print(f"Pages: {doc.page}")
-    return OUTPUT
+    return target
 
 
 if __name__ == "__main__":
-    build()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Render the AUTHENTIQ complete guide as a PDF")
+    parser.add_argument(
+        "--output",
+        default=str(OUTPUT),
+        help="Destination path. Defaults to the parent of the repository so the PDF stays outside version control.",
+    )
+    arguments = parser.parse_args()
+    build(Path(arguments.output))

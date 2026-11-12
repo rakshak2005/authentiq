@@ -75,6 +75,7 @@ async def unhandled_exception(request: Request, exc: Exception):
 
 
 @app.get("/api/health", tags=["system"])
+@app.get("/health", tags=["system"], include_in_schema=False)
 def health():
     status = ledger_service.status()
     return {

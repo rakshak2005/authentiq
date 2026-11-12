@@ -377,7 +377,7 @@ def chapter_running() -> list:
                 "npm run build",
             ]
         ),
-        p("The backend suite currently passes 76 tests. The frontend build passes TypeScript checking and Vite bundling; the only expected warning is Vite's chunk-size advisory."),
+        p("The backend suite currently passes 82 tests. The frontend build passes TypeScript checking and Vite bundling; the only expected warning is Vite's chunk-size advisory."),
         h2("Docker Compose"),
         code_block(
             [
