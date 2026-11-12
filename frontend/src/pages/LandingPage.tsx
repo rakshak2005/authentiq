@@ -1414,18 +1414,28 @@ function App() {
               <span>TEAM FANTASTIC FOUR</span>
               <div>
                 {[
-                  "Mohit Nagdeep",
-                  "Rakshak Patel V",
-                  "Sampath Nagaraj Shet",
-                  "Sushanth Sapare",
-                ].map((name) => (
+                  {
+                    name: "Mohit Nagdeep",
+                    href: "https://www.linkedin.com/in/mohitnagdeep?utm_source=share_via&utm_content=profile&utm_medium=member_android",
+                  },
+                  {
+                    name: "Rakshak Patel V",
+                    href: "https://www.linkedin.com/in/rakshak-patel-v-12b2b624a?utm_source=share_via&utm_content=profile&utm_medium=member_android",
+                  },
+                  {
+                    name: "Sampath Nagaraj Shet",
+                    href: "https://www.linkedin.com/in/sampath-nagaraj-shet-640261325",
+                  },
+                  {
+                    name: "Sushanth Sapare",
+                    href: "https://www.linkedin.com/in/sushanth-sapare/",
+                  },
+                ].map(({ name, href }) => (
                   <a
-                    href="#contact"
+                    href={href}
                     key={name}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      navigateToSection("contact");
-                    }}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
                     {name} <Arrow diagonal />
                   </a>
