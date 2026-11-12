@@ -60,9 +60,9 @@ const navSections: Array<{
     items: [
       { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { to: "/register", label: "Register creation", icon: PlusCircle },
-      { to: "/timeline", label: "Creative timeline", icon: Activity },
+      { to: "/timeline", label: "Timeline", icon: Activity },
       { to: "/ideas", label: "Idea vault", icon: Lightbulb },
-      { to: "/provenance", label: "AI provenance", icon: Sparkles },
+      { to: "/provenance", label: "AI disclosure", icon: Sparkles },
     ],
   },
   {
@@ -84,8 +84,11 @@ const navSections: Array<{
       { to: "/alerts", label: "Alerts", icon: Boxes },
       { to: "/audit-logs", label: "Ledger & audit", icon: ScrollText },
       { to: "/notifications", label: "Notifications", icon: Bell },
-      { to: "/settings", label: "Settings", icon: Settings },
     ],
+  },
+  {
+    label: "Account",
+    items: [{ to: "/settings", label: "Settings", icon: Settings }],
   },
   {
     label: "Administration",

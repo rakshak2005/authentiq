@@ -9,7 +9,6 @@ import {
   Laptop,
   Lock,
   LogOut,
-  Palette,
   ShieldCheck,
   Trash2,
   UserPlus,
@@ -248,7 +247,7 @@ export default function SettingsPage() {
       <PageHeader
         eyebrow="Account"
         title="Settings and security"
-        description="Manage your profile, password, active sessions, organization, and appearance. Security controls report their real availability."
+        description="Manage your profile, password, active sessions, and organization. Security controls report their real availability."
       />
 
       <Tabs defaultValue="profile">
@@ -256,7 +255,6 @@ export default function SettingsPage() {
           <TabsTrigger value="profile"><CircleUserRound /> Profile</TabsTrigger>
           <TabsTrigger value="security"><ShieldCheck /> Security</TabsTrigger>
           <TabsTrigger value="organization"><Building2 /> Organization</TabsTrigger>
-          <TabsTrigger value="appearance"><Palette /> Appearance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -577,56 +575,6 @@ export default function SettingsPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="appearance">
-          <div className="grid max-w-3xl gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Typefaces</CardTitle>
-                <CardDescription>Turret Road carries the display voice, Funnel Display the interface voice.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-lg border border-border/70 p-4">
-                  <p className="font-display text-3xl leading-none">TURRET ROAD</p>
-                  <p className="mt-2 text-[11px] text-muted-foreground">Primary typeface, headings and wordmarks.</p>
-                </div>
-                <div className="rounded-lg border border-border/70 p-4">
-                  <p className="text-2xl leading-none">Funnel Display</p>
-                  <p className="mt-2 text-[11px] text-muted-foreground">Secondary typeface, interface and body copy.</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Palette</CardTitle>
-                <CardDescription>Ink, paper and one neon lime accent. No other colours are used.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { name: "Off-white", value: "#EAEAEA" },
-                    { name: "Black", value: "#171717" },
-                    { name: "Neon lime", value: "#B7FF00" },
-                    { name: "White", value: "#FFFFFF" },
-                    { name: "Dark grey", value: "#454545" },
-                    { name: "Mid grey", value: "#888888" },
-                    { name: "Light grey", value: "#D0D0D0" },
-                  ].map((swatch) => (
-                    <div key={swatch.value} className="flex items-center gap-2 rounded-lg border border-border/70 p-2">
-                      <span
-                        className="size-7 shrink-0 rounded-md border border-border/70"
-                        style={{ backgroundColor: swatch.value }}
-                      />
-                      <div className="min-w-0">
-                        <p className="truncate text-[11px] font-medium">{swatch.name}</p>
-                        <p className="font-mono text-[10px] text-muted-foreground">{swatch.value}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
       </Tabs>
 
       <Card>

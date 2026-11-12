@@ -32,8 +32,8 @@ export default function TimelinePage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Creative timeline"
-        title="Your ownership record"
+        eyebrow="Ownership timeline"
+        title="Ownership timeline"
         description="A chronological view of every fingerprinted creation, its commitments, and its ledger state."
         actions={
           <Button asChild variant="gradient" size="sm">

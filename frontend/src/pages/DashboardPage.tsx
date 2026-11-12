@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Activity,
-  ArrowLeftRight,
   ArrowUpRight,
   Boxes,
   CheckCircle2,
@@ -13,10 +12,8 @@ import {
   PlusCircle,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
   Users,
 } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { PageHeader, ErrorState, LoadingBlock, EmptyState } from "@/components/common/page-states";
 import { StatCard } from "@/components/common/stat-card";
 import { StatusBadge, LedgerBadge } from "@/components/common/status-badge";
@@ -28,8 +25,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { api } from "@/lib/api";
 import type { AuditEntry, DashboardActivity, DashboardSummary, LedgerStatus } from "@/lib/types";
 import { formatBytes, formatDate, humanizeAction, relativeTime, titleCase } from "@/lib/format";
-
-const chartColors = ["#171717", "#B7FF00", "#454545", "#888888", "#D0D0D0", "#EAEAEA"];
 
 interface AuditChain {
   valid: boolean;
@@ -61,9 +56,7 @@ export default function DashboardPage() {
   }
 
   const stats = summary.data.stats;
-  const charts = summary.data.charts;
   const data = activity.data;
-  const maxRegistrations = Math.max(1, ...charts.registrations_by_month.map((item) => item.registrations));
 
   return (
     <div className="space-y-6">
@@ -81,6 +74,11 @@ export default function DashboardPage() {
                 <PlusCircle /> Register creation
               </Link>
             </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/anonymous-verification">
+                <ShieldCheck /> Verify ownership
+              </Link>
+            </Button>
           </>
         }
       />
@@ -88,89 +86,10 @@ export default function DashboardPage() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total creations" value={stats.total_creations} hint="Fingerprinted records" icon={<Fingerprint className="size-4" />} onClick={() => navigate("/timeline")} />
         <StatCard label="Verified records" value={stats.verified_records} hint="Ownership proof or verifier confirmed" tone="green" icon={<CheckCircle2 className="size-4" />} onClick={() => navigate("/timeline")} />
-        <StatCard label="Protected ideas" value={stats.protected_ideas} hint="Commitments without public disclosure" tone="violet" icon={<Lightbulb className="size-4" />} onClick={() => navigate("/ideas")} />
-        <StatCard label="Team projects" value={stats.team_projects} hint="Shared ownership workspaces" tone="blue" icon={<Users className="size-4" />} onClick={() => navigate("/teams")} />
+        <StatCard label="Protected ideas" value={stats.protected_ideas} hint="Private timestamped commitments" tone="violet" icon={<Lightbulb className="size-4" />} onClick={() => navigate("/ideas")} />
         <StatCard label="Pending transfers" value={stats.pending_transfers} hint="Awaiting recipient or owner action" tone="amber" icon={<FileCheck2 className="size-4" />} onClick={() => navigate("/transfers")} />
-        <StatCard label="Incoming ownership" value={stats.incoming_ownership ?? 0} hint="Creations being handed to you" tone="amber" icon={<ArrowLeftRight className="size-4" />} onClick={() => navigate("/transfers")} />
         <StatCard label="Active disputes" value={stats.active_disputes} hint="Open, under review, or evidence requested" tone="amber" icon={<Gavel className="size-4" />} onClick={() => navigate("/disputes")} />
-        <StatCard label="Security alerts" value={stats.security_alerts} hint="New or under investigation" tone="violet" icon={<ShieldCheck className="size-4" />} onClick={() => navigate("/alerts")} />
-        <StatCard label="Verified proofs" value={stats.verified_proofs} hint={`${stats.active_shares} active silent shares`} tone="green" icon={<Sparkles className="size-4" />} onClick={() => navigate("/anonymous-verification")} />
       </div>
-
-      <div className="grid gap-4 xl:grid-cols-3">
-        <Card className="xl:col-span-2">
-          <CardHeader className="flex-row items-start justify-between gap-3">
-            <div>
-              <CardTitle>Registration activity</CardTitle>
-              <CardDescription>Real registrations recorded over the last six months.</CardDescription>
-            </div>
-            <Badge variant="outline">{stats.total_creations} total</Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[260px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={charts.registrations_by_month} margin={{ left: -18, right: 8, top: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fill: "var(--chart-label)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis allowDecimals={false} domain={[0, maxRegistrations + 1]} tick={{ fill: "var(--chart-label)", fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 10, fontSize: 12, color: "var(--chart-tooltip-text)" }}
-                    labelStyle={{ color: "var(--chart-tooltip-text)" }}
-                    itemStyle={{ color: "var(--chart-tooltip-text)" }}
-                  />
-                  <Area type="monotone" dataKey="registrations" stroke="var(--chart-line)" strokeWidth={2} fill="var(--chart-line)" fillOpacity={0.08} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Asset mix</CardTitle>
-            <CardDescription>Distribution of your registered creations.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {charts.asset_types.length ? (
-              <div className="h-[260px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={charts.asset_types} dataKey="value" nameKey="name" innerRadius={54} outerRadius={86} paddingAngle={3} stroke="none">
-                      {charts.asset_types.map((entry, index) => (
-                        <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip contentStyle={{ background: "var(--chart-tooltip-bg)", border: "1px solid var(--chart-tooltip-border)", borderRadius: 10, fontSize: 12, color: "var(--chart-tooltip-text)" }} itemStyle={{ color: "var(--chart-tooltip-text)" }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="-mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1">
-                  {charts.asset_types.slice(0, 6).map((entry, index) => (
-                    <span key={entry.name} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                      <span className="size-2 rounded-full" style={{ backgroundColor: chartColors[index % chartColors.length] }} />
-                      {titleCase(entry.name)} · {entry.value}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <EmptyState title="No asset data yet" description="Register a creation to populate this chart." className="border-0 py-12" />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader className="flex-row items-start justify-between gap-3">
-          <div>
-            <CardTitle>Creation cadence</CardTitle>
-            <CardDescription>Each square is one day. Every registration, idea, version, and verified proof adds a mark.</CardDescription>
-          </div>
-          <Badge variant="outline">Last 26 weeks</Badge>
-        </CardHeader>
-        <CardContent>
-          <ActivityHeatmap days={charts.activity_heatmap || []} />
-        </CardContent>
-      </Card>
 
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">

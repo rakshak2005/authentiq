@@ -216,12 +216,8 @@ export default function PublicRecordsPage() {
   const hasFilters = Boolean(query || assetType);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-foreground text-foreground">
-      <div className="pointer-events-none absolute inset-0 -z-0 grid-bg opacity-40" />
-      <div className="pointer-events-none absolute -left-24 top-0 -z-0 size-[420px] rounded-full bg-blue-600/15 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 bottom-0 -z-0 size-[420px] rounded-full bg-violet-600/15 blur-3xl" />
-
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-8 md:px-8">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-8 md:px-8">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <Link to="/" className="flex items-center gap-2.5">
             <BrandLogo className="size-10 rounded-xl shadow-lg ring-1 ring-white/10" />
@@ -237,7 +233,7 @@ export default function PublicRecordsPage() {
               asChild
               variant="outline"
               size="sm"
-              className="border-border bg-card text-foreground hover:bg-card"
+              className="border-border bg-background text-foreground hover:bg-accent"
             >
               <Link to="/verify">Public verifier</Link>
             </Button>
@@ -245,7 +241,7 @@ export default function PublicRecordsPage() {
               asChild
               variant="outline"
               size="sm"
-              className="border-border bg-card text-foreground hover:bg-card"
+              className="border-border bg-background text-foreground hover:bg-accent"
             >
               <Link to="/login">
                 Sign in <ArrowRight />

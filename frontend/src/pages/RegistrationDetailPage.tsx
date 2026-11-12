@@ -1031,7 +1031,7 @@ export default function RegistrationDetailPage() {
           <Card>
             <CardHeader className="flex-row items-start justify-between gap-2">
               <div>
-                <CardTitle>AI provenance declarations</CardTitle>
+                <CardTitle>AI disclosure declarations</CardTitle>
                 <CardDescription>Self-reported declarations recorded with your identity. Detection is probabilistic and never fabricated.</CardDescription>
               </div>
               <Button asChild size="sm" variant="outline">

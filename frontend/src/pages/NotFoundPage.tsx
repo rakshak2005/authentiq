@@ -25,7 +25,7 @@ export default function NotFoundPage() {
             <Link to="/verify"><Globe2 /> Public verification</Link>
           </Button>
           <Button asChild variant="ghost">
-            <Link to={user ? "/timeline" : "/login"}><ArrowLeft /> {user ? "Creative timeline" : "Back to login"}</Link>
+            <Link to={user ? "/timeline" : "/login"}><ArrowLeft /> {user ? "Ownership timeline" : "Back to login"}</Link>
           </Button>
         </div>
       </div>

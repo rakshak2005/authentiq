@@ -126,9 +126,9 @@ export default function ProvenancePage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="AI provenance"
+        eyebrow="AI disclosure"
         title="Record how a work was made"
-        description="Declare AI involvement, commit to prompts, and attach the model or tool used. Declarations are recorded with your identity; optional analysis only reports signals that were actually inspected."
+        description="Document whether AI was used, which tools or models were involved, and the role they played. Your declaration is recorded with the creation."
         actions={
           <Button variant="gradient" size="sm" onClick={() => openRecordDialog()} disabled={!registrations.length}>
             <PlusCircle /> Add provenance
@@ -138,7 +138,7 @@ export default function ProvenancePage() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Provenance records</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Disclosure records</p>
           <p className="mt-2 text-2xl font-semibold">{records.length}</p>
         </Card>
         <Card className="p-4">
@@ -176,7 +176,7 @@ export default function ProvenancePage() {
       {!!records.length && (
         <Card>
           <CardHeader>
-            <CardTitle>Provenance history</CardTitle>
+            <CardTitle>Disclosure history</CardTitle>
             <CardDescription>Every declaration and inspection result tied to your registrations.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -254,7 +254,7 @@ export default function ProvenancePage() {
       <Dialog open={recordOpen} onOpenChange={(value) => !busy && setRecordOpen(value)}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>Record AI provenance</DialogTitle>
+            <DialogTitle>Record AI disclosure</DialogTitle>
             <DialogDescription>
               The declaration is encrypted at rest. A commitment and ledger entry are created so the statement can be referenced later.
             </DialogDescription>
