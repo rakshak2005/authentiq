@@ -56,9 +56,11 @@ def test_dashboard_heatmap_uses_the_reader_day(client, user_factory):
     reader_cells = {cell["date"]: cell["total"] for cell in reader_view["charts"]["activity_heatmap"]}
 
     assert sum(reader_cells.values()) == sum(utc_cells.values()) == 1
-    # The same event, filed under the reader's calendar day.
-    assert utc_view["charts"]["activity_heatmap"][-1]["date"] == reader_view["charts"]["activity_heatmap"][-1]["date"]
-    assert reader_cells[reader_view["charts"]["activity_heatmap"][-1]["date"]] == 1
+    # The same event, filed under each view's local calendar day.
+    utc_latest_day = utc_view["charts"]["activity_heatmap"][-1]["date"]
+    reader_latest_day = reader_view["charts"]["activity_heatmap"][-1]["date"]
+    assert utc_cells[utc_latest_day] == 1
+    assert reader_cells[reader_latest_day] == 1
 
 
 def test_dashboard_rejects_an_out_of_range_offset(client, user_factory):
