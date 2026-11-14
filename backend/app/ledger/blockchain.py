@@ -10,8 +10,10 @@ from web3.exceptions import (
 
 try:
     from web3 import Web3
+    from eth_account import Account
 except ImportError:
     Web3 = None  # type: ignore[assignment]
+    Account = None  # type: ignore[assignment]
 
 from app.core.config import settings
 from app.ledger.simulation import LedgerAdapter, LedgerUnavailable
@@ -58,7 +60,7 @@ class PolygonAdapter(LedgerAdapter):
                 "Polygon adapter is not configured. Missing: " + ", ".join(missing)
             )
 
-        if Web3 is None:
+        if Web3 is None or Account is None:
             raise LedgerUnavailable(
                 "Polygon mode requires the optional packages web3 and eth-account. Install them to enable it."
             )
