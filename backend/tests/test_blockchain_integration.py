@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -64,9 +65,13 @@ def _wait_for_hardhat(url: str, timeout: float = 30.0) -> None:
 
 
 def _run_npx(args: list[str], cwd: Path, timeout: int = 120):
-    """Run an npx command via cmd.exe on Windows."""
+    """Run an npx command, cross-platform."""
+    if sys.platform == "win32":
+        full_cmd = ["cmd", "/c", "npx"] + args
+    else:
+        full_cmd = ["npx"] + args
     return subprocess.run(
-        ["cmd", "/c", "npx"] + args,
+        full_cmd,
         cwd=str(cwd),
         capture_output=True,
         text=True,
@@ -76,8 +81,12 @@ def _run_npx(args: list[str], cwd: Path, timeout: int = 120):
 
 def _start_hardhat_node():
     """Start a local Hardhat node as a subprocess."""
+    if sys.platform == "win32":
+        full_cmd = ["cmd", "/c", "npx", "hardhat", "node"]
+    else:
+        full_cmd = ["npx", "hardhat", "node"]
     return subprocess.Popen(
-        ["cmd", "/c", "npx", "hardhat", "node"],
+        full_cmd,
         cwd=str(BLOCKCHAIN_DIR),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,

@@ -26,8 +26,12 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
-      - name: Install dependencies
+      - name: Install backend dependencies
         run: pip install -r requirements.txt
+
+      - name: Install blockchain dependencies for integration tests
+        working-directory: blockchain
+        run: npm ci
 
       - name: Run the test suite
         run: python -m pytest
@@ -55,3 +59,46 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  circuits:
+    name: Groth16 circuit and proof tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: circuits
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: circuits/package-lock.json
+
+      - name: Install circuit dependencies
+        run: npm ci
+
+      - name: Compile circom circuit
+        run: |
+          node node_modules/circom/cli.js ownership.circom \
+            --r1cs build/ownership.r1cs \
+            --wasm build/ownership.wasm \
+            --sym build/ownership.sym \
+            -o build
+
+      - name: Run Groth16 proof tests
+        run: node scripts/test_groth16.js
+
+  docs:
+    name: Documentation checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify required documentation files exist
+        run: |
+          test -f docs/DEVELOPMENT_BASELINE.md
+          test -f docs/ZKP_ARCHITECTURE_AUDIT.md
+          test -f docs/ZKP_GROTH16_TRUSTED_SETUP.md
+          test -f docs/BLOCKCHAIN_TESTING.md
+          echo "All documentation files present"
