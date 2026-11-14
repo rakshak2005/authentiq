@@ -157,9 +157,13 @@ class VerificationRequest(Base, UUIDMixin):
 
 class LedgerTransaction(Base, UUIDMixin):
     __tablename__ = "ledger_transactions"
-    __table_args__ = (Index("ix_ledger_type_entity", "tx_type", "entity_id"),)
+    __table_args__ = (
+        Index("ix_ledger_type_entity", "tx_type", "entity_id"),
+        Index("ix_ledger_idempotency_key", "idempotency_key"),
+    )
 
     tx_id: Mapped[str] = mapped_column(String(80), unique=True, index=True, nullable=False)
+    idempotency_key: Mapped[str | None] = mapped_column(String(120), unique=True, index=True, nullable=True)
     block_number: Mapped[int] = mapped_column(Integer, nullable=False)
     tx_type: Mapped[str] = mapped_column(String(48), index=True, nullable=False)
     actor_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
@@ -173,4 +177,7 @@ class LedgerTransaction(Base, UUIDMixin):
     network: Mapped[str] = mapped_column(String(80), default="AUTHENTIQ Local Ledger", nullable=False)
     status: Mapped[str] = mapped_column(String(24), default="confirmed", nullable=False)
     chain_tx_hash: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    contract_address: Mapped[str | None] = mapped_column(String(42), nullable=True)
+    chain_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

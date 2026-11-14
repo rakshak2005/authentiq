@@ -19,11 +19,16 @@ logger = logging.getLogger("authentiq")
 # (table, column, portable DDL type)
 COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     ("registrations", "team_project_id", "VARCHAR(36)"),
+    ("ledger_transactions", "idempotency_key", "VARCHAR(120)"),
+    ("ledger_transactions", "contract_address", "VARCHAR(42)"),
+    ("ledger_transactions", "chain_id", "INTEGER"),
+    ("ledger_transactions", "revision", "INTEGER"),
 )
 
 # (index name, table, column)
 INDEX_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     ("ix_registrations_team_project_id", "registrations", "team_project_id"),
+    ("ix_ledger_idempotency_key", "ledger_transactions", "idempotency_key"),
 )
 
 
