@@ -66,7 +66,11 @@ class PolygonAdapter(LedgerAdapter):
             )
 
         self._web3 = Web3(Web3.HTTPProvider(settings.chain_rpc_url))
-        if not self._web3.is_connected():
+        try:
+            connected = self._web3.is_connected()
+        except Exception:
+            connected = False
+        if not connected:
             raise LedgerUnavailable("Could not connect to the configured Polygon RPC endpoint")
 
         self._account = Account.from_key(settings.chain_private_key)
@@ -143,11 +147,16 @@ class PolygonAdapter(LedgerAdapter):
                     "from": self._account.address,
                     "nonce": nonce,
                     "chainId": settings.chain_id,
-                    "gas": 300000,
-                    "maxFeePerGas": self._web3.to_wei("35", "gwei"),
-                    "maxPriorityFeePerGas": self._web3.to_wei("30", "gwei"),
                 }
             )
+            # Estimate gas and add a 20% buffer
+            try:
+                estimated = self._web3.eth.estimate_gas(tx)
+                tx["gas"] = int(estimated * 1.2)
+            except Exception:
+                tx["gas"] = 300000
+            tx["maxFeePerGas"] = self._web3.to_wei("35", "gwei")
+            tx["maxPriorityFeePerGas"] = self._web3.to_wei("30", "gwei")
         except ContractLogicError as exc:
             raise LedgerUnavailable(f"Contract rejected transaction: {exc}") from exc
         except InvalidAddress as exc:

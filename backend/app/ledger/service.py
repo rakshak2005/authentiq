@@ -73,7 +73,7 @@ class LedgerService:
 
     def register_creation(self, db, actor_id, registration) -> LedgerTransaction:
         idempotency_key = f"creation_registered:{registration.registration_id}"
-        return self._record(
+        transaction = self._record(
             db,
             "creation_registered",
             actor_id,
@@ -88,6 +88,8 @@ class LedgerService:
             },
             idempotency_key=idempotency_key,
         )
+        registration.ledger_mode = transaction.mode
+        return transaction
 
     def register_idea(self, db, actor_id, idea) -> LedgerTransaction:
         idempotency_key = f"idea_protected:{idea.idea_ref}"
