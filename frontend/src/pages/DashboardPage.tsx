@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { PageHeader, ErrorState, LoadingBlock, EmptyState } from "@/components/common/page-states";
 import { StatCard } from "@/components/common/stat-card";
-import { StatusBadge, LedgerBadge } from "@/components/common/status-badge";
+import { StatusBadge, LedgerBadge, LedgerStatusIndicator } from "@/components/common/status-badge";
 import { HashValue } from "@/components/common/hash-value";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -158,9 +158,9 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
                 <div className="min-w-0">
                   <p className="text-xs font-medium">Ledger mode</p>
-                  <p className="truncate text-[11px] text-muted-foreground">{ledger.data?.label || "Checking adapter"}</p>
+                  <p className="text-[11px] text-muted-foreground">{ledger.data?.mode ? titleCase(ledger.data.mode) : "Checking adapter"}</p>
                 </div>
-                <LedgerBadge mode={ledger.data?.mode} network={ledger.data?.network} />
+                <LedgerStatusIndicator />
               </div>
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 p-3">
                 <div>

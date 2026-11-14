@@ -32,6 +32,7 @@ import { PageHeader, ErrorState, LoadingBlock, EmptyState } from "@/components/c
 import { HashValue } from "@/components/common/hash-value";
 import { OwnershipDna } from "@/components/common/ownership-dna";
 import { StatusBadge, LedgerBadge } from "@/components/common/status-badge";
+import { LedgerTransactionDetail } from "@/components/common/ledger-transaction";
 import { Field, InfoRow } from "@/components/common/field";
 import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { FileDropzone } from "@/components/common/file-dropzone";
@@ -228,6 +229,32 @@ export default function RegistrationDetailPage() {
     enabled: !!registration,
   });
 
+  const txDetailQuery = useQuery({
+    queryKey: ["ledger-transaction", registration?.ledger_tx_id],
+    queryFn: () =>
+      api.get<{
+        tx_id: string;
+        block_number: number;
+        tx_type: string;
+        entity_type: string;
+        entity_id: string;
+        payload_digest: string;
+        prev_hash: string;
+        record_hash: string;
+        mode: string;
+        network: string;
+        status: string;
+        chain_tx_hash?: string | null;
+        contract_address?: string | null;
+        chain_id?: number | null;
+        revision?: number | null;
+        timestamp: string;
+        raw_ledger_record: Record<string, unknown> | null;
+        integrity: { database_digest: string; ledger_payload_digest?: string; matches: boolean };
+      }>(`/ledger/transactions/${encodeURIComponent(registration?.ledger_tx_id || "")}`),
+    enabled: !!registration?.ledger_tx_id,
+  });
+
   const duplicateAlerts = useMemo(
     () =>
       (alertsQuery.data?.items || []).filter(
@@ -245,6 +272,7 @@ export default function RegistrationDetailPage() {
   const refresh = () => {
     registrationQuery.refetch();
     verificationQuery.refetch();
+    txDetailQuery.refetch();
     versionsQuery.refetch();
     proofsQuery.refetch();
     sharesQuery.refetch();
@@ -493,7 +521,16 @@ export default function RegistrationDetailPage() {
       {registration.ledger_mode === "simulation" && (
         <Alert variant="warning">
           <AlertDescription>
-            Ledger transaction <span className="font-mono">{registration.ledger_tx_id || "pending"}</span> is a local simulation record. No public blockchain transaction is claimed.
+            Ledger transaction <span className="font-mono">{registration.ledger_tx_id || "pending"}</span> is a local
+            simulation record. No public blockchain transaction is claimed.
+          </AlertDescription>
+        </Alert>
+      )}
+      {registration.ledger_mode !== "simulation" && (
+        <Alert variant="info">
+          <AlertDescription>
+            Ledger transaction <span className="font-mono">{registration.ledger_tx_id || "pending"}</span> is anchored on
+            Polygon Amoy. No original file contents are stored on-chain — only identifiers and cryptographic digests.
           </AlertDescription>
         </Alert>
       )}
@@ -686,7 +723,7 @@ export default function RegistrationDetailPage() {
                   <CardTitle>Ledger integrity</CardTitle>
                   <CardDescription>Server-side verification of the append-only record.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="space-y-3">
                   {verificationQuery.isLoading && <LoadingBlock rows={3} />}
                   {verificationQuery.data ? (
                     <>
@@ -715,13 +752,33 @@ export default function RegistrationDetailPage() {
                   ) : (
                     <p className="text-xs text-muted-foreground">Verification state is unavailable.</p>
                   )}
-                  {ledger && (
-                    <div className="rounded-lg border border-border/60 bg-background/30 p-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Raw record</p>
-                      <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-all font-mono text-[10px] text-muted-foreground">
-                        {JSON.stringify(ledger, null, 2)}
-                      </pre>
-                    </div>
+
+                  {registration.ledger_mode !== "simulation" && txDetailQuery.data && (
+                    <LedgerTransactionDetail
+                      transaction={{
+                        tx_id: txDetailQuery.data.tx_id,
+                        block_number: txDetailQuery.data.block_number,
+                        tx_type: txDetailQuery.data.tx_type,
+                        entity_type: txDetailQuery.data.entity_type,
+                        entity_id: txDetailQuery.data.entity_id,
+                        payload_digest: txDetailQuery.data.payload_digest,
+                        prev_hash: txDetailQuery.data.prev_hash,
+                        record_hash: txDetailQuery.data.record_hash,
+                        mode: txDetailQuery.data.mode,
+                        network: txDetailQuery.data.network,
+                        status: txDetailQuery.data.status,
+                        chain_tx_hash: txDetailQuery.data.chain_tx_hash,
+                        contract_address: txDetailQuery.data.contract_address,
+                        chain_id: txDetailQuery.data.chain_id,
+                        revision: txDetailQuery.data.revision,
+                        timestamp: txDetailQuery.data.timestamp,
+                      }}
+                      rawRecord={txDetailQuery.data.raw_ledger_record}
+                      integrity={txDetailQuery.data.integrity}
+                    />
+                  )}
+                  {txDetailQuery.isError && (
+                    <p className="text-xs text-destructive">Unable to load transaction details from the ledger.</p>
                   )}
                 </CardContent>
               </Card>

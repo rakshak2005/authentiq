@@ -209,6 +209,7 @@ export interface LedgerStatus {
   tamper_detected?: boolean | null;
   errors?: string[];
   message?: string;
+  available?: boolean;
   latest_transaction?: LedgerTransaction | null;
   database_records?: number;
 }
@@ -228,6 +229,9 @@ export interface LedgerTransaction {
   network: string;
   status: string;
   chain_tx_hash?: string | null;
+  contract_address?: string | null;
+  chain_id?: number | null;
+  revision?: number | null;
   timestamp: string;
 }
 

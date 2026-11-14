@@ -6,6 +6,7 @@ import {
   Copy,
   Eye,
   EyeOff,
+  ExternalLink,
   Fingerprint,
   KeyRound,
   Loader2,
@@ -502,7 +503,20 @@ export default function PublicAnonymousVerifyPage() {
                     {result.public_record.ledger_tx_id && (
                       <div className="flex items-center gap-2">
                         <span className="w-20 shrink-0 text-muted-foreground">Ledger</span>
-                        <HashValue value={result.public_record.ledger_tx_id} label="Ledger transaction" head={14} tail={10} />
+                        <div className="flex items-center gap-1">
+                          <HashValue value={result.public_record.ledger_tx_id} label="Ledger transaction" head={14} tail={10} />
+                          {result.public_record.ledger_mode === "polygon" && (
+                            <a
+                              href={`https://amoy.polygonscan.com/tx/${result.public_record.ledger_tx_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="size-6 shrink-0 rounded border border-border/60 bg-muted/40 text-[10px] text-violet hover:bg-violet/20 hover:text-violet"
+                              title="View on Polygon Amoy Explorer"
+                            >
+                              <ExternalLink className="size-3.5" />
+                            </a>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

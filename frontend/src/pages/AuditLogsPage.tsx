@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { PageHeader, ErrorState, LoadingBlock, EmptyState } from "@/components/common/page-states";
 import { Pagination } from "@/components/common/pagination";
 import { HashValue } from "@/components/common/hash-value";
-import { StatusBadge, LedgerBadge } from "@/components/common/status-badge";
+import { LedgerBadge } from "@/components/common/status-badge";
+import { LedgerTransactionDetail } from "@/components/common/ledger-transaction";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -245,33 +246,56 @@ export default function AuditLogsPage() {
               {!!ledgerQuery.data?.items.length && (
                 <>
                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Block</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Entity</TableHead>
-                        <TableHead>Record hash</TableHead>
-                        <TableHead>Timestamp</TableHead>
-                        <TableHead />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {ledgerQuery.data.items.map((transaction) => (
-                        <TableRow key={transaction.id}>
-                          <TableCell><Badge variant="slate">#{transaction.block_number}</Badge></TableCell>
-                          <TableCell className="text-xs">{titleCase(transaction.tx_type)}</TableCell>
-                          <TableCell>
-                            <p className="text-xs">{titleCase(transaction.entity_type)}</p>
-                            <p className="max-w-[180px] truncate font-mono text-[10px] text-muted-foreground">{transaction.entity_id}</p>
-                          </TableCell>
-                          <TableCell><HashValue value={transaction.record_hash} label="Record hash" head={10} tail={8} /></TableCell>
-                          <TableCell className="whitespace-nowrap text-[11px] text-muted-foreground">{relativeTime(transaction.timestamp)}</TableCell>
-                          <TableCell>
-                            <Button size="sm" variant="ghost" onClick={() => openTransaction(transaction)}><FileSearch /> Inspect</Button>
-                          </TableCell>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Block</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Entity</TableHead>
+                          <TableHead>Chain</TableHead>
+                          <TableHead>Record hash</TableHead>
+                          <TableHead>Timestamp</TableHead>
+                          <TableHead />
                         </TableRow>
-                      ))}
-                    </TableBody>
+                      </TableHeader>
+                      <TableBody>
+                        {ledgerQuery.data.items.map((transaction) => (
+                          <TableRow key={transaction.id}>
+                            <TableCell><Badge variant="slate">#{transaction.block_number}</Badge></TableCell>
+                            <TableCell className="text-xs">{titleCase(transaction.tx_type)}</TableCell>
+                            <TableCell>
+                              <p className="text-xs">{titleCase(transaction.entity_type)}</p>
+                              <p className="max-w-[180px] truncate font-mono text-[10px] text-muted-foreground">{transaction.entity_id}</p>
+                            </TableCell>
+                            <TableCell>
+                              {transaction.mode !== "simulation" && transaction.chain_tx_hash ? (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  asChild
+                                  className="p-0"
+                                >
+                                  <a
+                                    href={`https://amoy.polygonscan.com/tx/${transaction.chain_tx_hash}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs font-mono text-violet hover:underline"
+                                    title="View on Polygon Amoy Explorer"
+                                  >
+                                    {transaction.chain_tx_hash.slice(0, 12)}…
+                                  </a>
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">simulated</span>
+                              )}
+                            </TableCell>
+                            <TableCell><HashValue value={transaction.record_hash} label="Record hash" head={10} tail={8} /></TableCell>
+                            <TableCell className="whitespace-nowrap text-[11px] text-muted-foreground">{relativeTime(transaction.timestamp)}</TableCell>
+                            <TableCell>
+                              <Button size="sm" variant="ghost" onClick={() => openTransaction(transaction)}><FileSearch /> Inspect</Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
                   </Table>
                   <Pagination page={ledgerPage} pages={ledgerQuery.data.pages} total={ledgerQuery.data.total} onPageChange={setLedgerPage} disabled={ledgerQuery.isFetching} />
                 </>
@@ -346,30 +370,28 @@ export default function AuditLogsPage() {
             <DialogDescription>Database record compared against the stored ledger payload.</DialogDescription>
           </DialogHeader>
           {txDetail && (
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="slate">Block #{txDetail.block_number}</Badge>
-                <LedgerBadge mode={txDetail.mode} network={txDetail.network} />
-                <StatusBadge status={txDetail.status} />
-                <Badge variant={txDetail.integrity.matches ? "green" : "red"}>
-                  {txDetail.integrity.matches ? "Payload digest matches" : "Digest mismatch"}
-                </Badge>
-              </div>
-              <div className="rounded-lg border border-border/60 p-3 space-y-1.5 text-xs">
-                <p className="font-mono break-all"><span className="text-muted-foreground">tx_id:</span> {txDetail.tx_id}</p>
-                <p className="font-mono break-all"><span className="text-muted-foreground">entity:</span> {txDetail.entity_type} / {txDetail.entity_id}</p>
-                <p className="font-mono break-all"><span className="text-muted-foreground">payload_digest:</span> {txDetail.payload_digest}</p>
-                <p className="font-mono break-all"><span className="text-muted-foreground">prev_hash:</span> {txDetail.prev_hash}</p>
-                <p className="font-mono break-all"><span className="text-muted-foreground">record_hash:</span> {txDetail.record_hash}</p>
-                <p className="text-muted-foreground">recorded {formatDate(txDetail.timestamp)}</p>
-              </div>
-              <div>
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Raw ledger record</p>
-                <pre className="max-h-[42vh] overflow-auto rounded-lg border border-border/60 bg-background/50 p-3 font-mono text-[10px] leading-relaxed text-muted-foreground">
-{JSON.stringify(txDetail.raw_ledger_record, null, 2)}
-                </pre>
-              </div>
-            </div>
+            <LedgerTransactionDetail
+              transaction={{
+                tx_id: txDetail.tx_id,
+                block_number: txDetail.block_number,
+                tx_type: txDetail.tx_type,
+                entity_type: txDetail.entity_type,
+                entity_id: txDetail.entity_id,
+                payload_digest: txDetail.payload_digest,
+                prev_hash: txDetail.prev_hash,
+                record_hash: txDetail.record_hash,
+                mode: txDetail.mode,
+                network: txDetail.network,
+                status: txDetail.status,
+                chain_tx_hash: txDetail.chain_tx_hash,
+                contract_address: txDetail.contract_address,
+                chain_id: txDetail.chain_id,
+                revision: txDetail.revision,
+                timestamp: txDetail.timestamp,
+              }}
+              rawRecord={txDetail.raw_ledger_record}
+              integrity={txDetail.integrity}
+            />
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setTxDetail(null)}>Close</Button>

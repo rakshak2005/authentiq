@@ -49,6 +49,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LedgerStatusIndicator } from "@/components/common/status-badge";
 
 const navSections: Array<{
   label: string;
@@ -162,11 +163,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="border-t border-border/60 p-3">
         <div className="rounded-lg border border-border/60 bg-background/40 p-3">
           <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-emerald-400 pulse-dot" />
-            LOCAL APPEND-ONLY LEDGER
+            <LedgerStatusIndicator />
           </div>
           <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground/80">
-            Records are simulated locally. No public blockchain transaction is claimed.
+            {" "}
+            No public blockchain transaction is claimed for records written while
+            simulation mode is active.
           </p>
           <NavLink to="/audit-logs" onClick={onNavigate} className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-foreground hover:text-foreground">
             Inspect integrity <ChevronDown className="size-3 -rotate-90" />
@@ -365,10 +367,12 @@ function LedgerChip() {
       className="hidden items-center gap-2 rounded-full border border-border/70 bg-background/40 px-3 py-1.5 text-[11px] font-medium transition-colors hover:bg-accent lg:inline-flex"
       title={data?.message || data?.label}
     >
-      <span className={cn("size-1.5 rounded-full", simulated ? "bg-amber-400" : "bg-violet-400")} />
+      <span className={cn("size-1.5 rounded-full", simulated ? "bg-amber-400" : data?.available ? "bg-violet-400" : "bg-rose-500")} />
       <span className="text-muted-foreground">{simulated ? "Simulated ledger" : "Polygon Amoy"}</span>
       <span className="text-muted-foreground/50">·</span>
-      <span className="font-mono text-muted-foreground">{data?.block_number ? `block ${data.block_number}` : "not connected"}</span>
+      <span className="font-mono text-muted-foreground">
+        {data?.block_number ? `block ${data.block_number}` : data?.available ? "connected" : "unavailable"}
+      </span>
     </button>
   );
 }
