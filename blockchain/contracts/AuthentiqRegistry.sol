@@ -13,7 +13,8 @@ contract AuthentiqRegistry {
     address public owner;
     uint256 public totalRecords;
     mapping(address => bool) public writers;
-    mapping(string => Record) private latestRecords;
+    mapping(string => Record) public latestRecords;
+    mapping(string => mapping(uint256 => Record)) public recordRevisions;
     mapping(string => uint256) public revisionCounts;
 
     event RecordEvent(
@@ -27,10 +28,14 @@ contract AuthentiqRegistry {
     );
 
     event WriterChanged(address indexed writer, bool allowed);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     error NotOwner();
     error NotWriter();
     error EmptyPayloadDigest();
+    error InvalidPayloadDigest();
+    error InvalidRecordId();
+    error InvalidNewOwner();
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
@@ -54,7 +59,10 @@ contract AuthentiqRegistry {
     }
 
     function transferOwnership(address newOwner) external onlyOwner {
+        if (newOwner == address(0)) revert InvalidNewOwner();
+        address previousOwner = owner;
         owner = newOwner;
+        emit OwnershipTransferred(previousOwner, newOwner);
     }
 
     function recordEvent(
@@ -63,17 +71,20 @@ contract AuthentiqRegistry {
         string calldata payloadDigest,
         string calldata entityId
     ) external onlyWriter {
-        if (bytes(payloadDigest).length == 0) revert EmptyPayloadDigest();
+        if (bytes(recordId).length == 0) revert InvalidRecordId();
+        _validateDigest(payloadDigest);
         uint256 revision = revisionCounts[recordId] + 1;
         revisionCounts[recordId] = revision;
         totalRecords += 1;
-        latestRecords[recordId] = Record({
+        Record memory record = Record({
             recordType: recordType,
             payloadDigest: payloadDigest,
             entityId: entityId,
             submitter: msg.sender,
             timestamp: block.timestamp
         });
+        latestRecords[recordId] = record;
+        recordRevisions[recordId][revision] = record;
         emit RecordEvent(
             recordId,
             recordType,
@@ -87,5 +98,28 @@ contract AuthentiqRegistry {
 
     function getRecord(string calldata recordId) external view returns (Record memory) {
         return latestRecords[recordId];
+    }
+
+    function getRecordRevision(string calldata recordId, uint256 revision)
+        external
+        view
+        returns (Record memory)
+    {
+        return recordRevisions[recordId][revision];
+    }
+
+    function _validateDigest(string calldata digest) internal pure {
+        bytes memory d = bytes(digest);
+        if (d.length == 0) revert EmptyPayloadDigest();
+        if (d.length != 64) revert InvalidPayloadDigest();
+        for (uint256 i = 0; i < 64; i++) {
+            if (
+                !(d[i] >= 0x30 && d[i] <= 0x39) &&
+                !(d[i] >= 0x41 && d[i] <= 0x46) &&
+                !(d[i] >= 0x61 && d[i] <= 0x66)
+            ) {
+                revert InvalidPayloadDigest();
+            }
+        }
     }
 }
