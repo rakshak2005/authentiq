@@ -63,10 +63,18 @@ def _wait_for_hardhat(url: str, timeout: float = 30.0) -> None:
     raise RuntimeError(f"Hardhat node did not become ready: {last_error}")
 
 
+def _npx_command(args: list[str], os_name: str | None = None) -> list[str]:
+    """Build an npx command that works on both Windows and POSIX shells."""
+    platform = os_name or os.name
+    if platform == "nt":
+        return ["cmd", "/c", "npx", *args]
+    return ["npx", *args]
+
+
 def _run_npx(args: list[str], cwd: Path, timeout: int = 120):
-    """Run an npx command via cmd.exe on Windows."""
+    """Run an npx command in a cross-platform way."""
     return subprocess.run(
-        ["cmd", "/c", "npx"] + args,
+        _npx_command(args),
         cwd=str(cwd),
         capture_output=True,
         text=True,
@@ -77,12 +85,30 @@ def _run_npx(args: list[str], cwd: Path, timeout: int = 120):
 def _start_hardhat_node():
     """Start a local Hardhat node as a subprocess."""
     return subprocess.Popen(
-        ["cmd", "/c", "npx", "hardhat", "node"],
+        _npx_command(["hardhat", "node"]),
         cwd=str(BLOCKCHAIN_DIR),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         env={**os.environ},
     )
+
+
+def test_npx_command_is_posix_safe():
+    assert _npx_command(["hardhat", "node"], os_name="posix") == [
+        "npx",
+        "hardhat",
+        "node",
+    ]
+
+
+def test_npx_command_is_windows_safe():
+    assert _npx_command(["hardhat", "node"], os_name="nt") == [
+        "cmd",
+        "/c",
+        "npx",
+        "hardhat",
+        "node",
+    ]
 
 
 # ---------------------------------------------------------------------------
