@@ -1,9 +1,8 @@
 """Lightweight, idempotent schema upgrades.
 
-The project ships without a migration framework. ``Base.metadata.create_all``
-creates missing tables but never adds columns to tables that already exist, so
-an upgraded database would break on the new fields. This module applies the
-additive column and index changes introduced after the first release.
+DEPRECATED: Alembic (backend/alembic/) is now the canonical migration runner and
+is invoked from ``app.core.database.init_db()`` via ``alembic upgrade head``.
+This module is kept only as a fallback for environments that cannot run Alembic.
 
 Every statement is written so that running it twice is a no-op.
 """
@@ -35,7 +34,11 @@ INDEX_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
 
 
 def ensure_schema() -> None:
-    """Add columns and indexes that are missing from an existing database."""
+    """Add columns and indexes that are missing from an existing database.
+
+    Kept for backward compatibility. Preferred path is Alembic
+    (``alembic upgrade head``), run from ``init_db()``.
+    """
     with engine.begin() as connection:
         inspector = inspect(connection)
         tables = set(inspector.get_table_names())

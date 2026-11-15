@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     refresh_token_days: int = 14
     reset_token_minutes: int = 30
     password_min_length: int = 10
+    secret_key_min_length: int = 32
 
     database_url: str = f"sqlite:///{(BACKEND_DIR / 'authentiq.db').as_posix()}"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173"
@@ -64,7 +65,7 @@ class Settings(BaseSettings):
     registration_rate_limit: int = 30
     registration_rate_window_seconds: int = 3600
 
-    demo_mode: bool = True
+    demo_mode: bool = False
     seed_demo: bool = False
     access_log: bool = True
 
@@ -87,6 +88,31 @@ class Settings(BaseSettings):
         if url.startswith("postgresql://"):
             return "postgresql+psycopg://" + url[len("postgresql://"):]
         return url
+
+    @field_validator("secret_key")
+    @classmethod
+    def validate_secret_key(cls, value: str, info) -> str:
+        """Reject the default development secret in production and enforce length."""
+        default = "authentiq-development-secret-change-me-0000000000000000"
+        if info.data.get("environment") == "production" and value == default:
+            raise ValueError(
+                "AUTHENTIQ_SECRET_KEY must be set to a non-default value when AUTHENTIQ_ENVIRONMENT=production"
+            )
+        if len(value) < cls.model_fields["secret_key_min_length"].default:
+            raise ValueError(
+                f"AUTHENTIQ_SECRET_KEY must be at least {cls.model_fields['secret_key_min_length'].default} characters"
+            )
+        return value
+
+    @field_validator("demo_mode")
+    @classmethod
+    def validate_demo_mode(cls, value: bool, info) -> bool:
+        """Demo mode must not be enabled in production."""
+        if info.data.get("environment") == "production" and value is True:
+            raise ValueError(
+                "AUTHENTIQ_DEMO_MODE must be false when AUTHENTIQ_ENVIRONMENT=production"
+            )
+        return value
 
     @property
     def cors_origin_list(self) -> list[str]:

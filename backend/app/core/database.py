@@ -1,5 +1,8 @@
 from collections.abc import Generator
+from pathlib import Path
 
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -31,6 +34,8 @@ def init_db() -> None:
     settings.ensure_directories()
     Base.metadata.create_all(bind=engine)
 
-    from app.core.migrations import ensure_schema
-
-    ensure_schema()
+    # Alembic is the canonical migration runner for schema evolution.
+    # create_all() creates tables that don't exist; alembic upgrade head applies
+    # versioned additive changes (new columns/indexes) to existing tables.
+    alembic_cfg = Config(str(Path(__file__).resolve().parents[2] / "alembic.ini"))
+    command.upgrade(alembic_cfg, "head")

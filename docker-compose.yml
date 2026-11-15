@@ -5,15 +5,21 @@ services:
     image: postgres:15-alpine
     container_name: authentiq-postgres
     environment:
-      POSTGRES_DB: authentiq
-      POSTGRES_USER: authentiq
-      POSTGRES_PASSWORD: authentiq
+      POSTGRES_DB: ${POSTGRES_DB:-authentiq}
+      POSTGRES_USER: ${POSTGRES_USER:-authentiq}
+      # POSTGRES_PASSWORD must be set explicitly (see .env.example). It is
+      # intentionally NOT hardcoded here. Do not expose the postgres port to
+      # the host; the backend reaches postgres over the internal compose network.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # NOTE: Do not publish the postgres port in production. The backend talks
+    # to postgres over the internal compose network. Uncomment only for local
+    # debugging, and bind to localhost:
+    # ports:
+    #   - "127.0.0.1:5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U authentiq -d authentiq"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-authentiq} -d ${POSTGRES_DB:-authentiq}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,7 +30,7 @@ services:
       dockerfile: Dockerfile
     container_name: authentiq-backend
     environment:
-      - AUTHENTIQ_DATABASE_URL=postgresql+psycopg://authentiq:authentiq@postgres:5432/authentiq
+      - AUTHENTIQ_DATABASE_URL=${AUTHENTIQ_DATABASE_URL:-postgresql+psycopg://authentiq:${POSTGRES_PASSWORD:-authentiq}@postgres:5432/authentiq}
       - AUTHENTIQ_LEDGER_MODE=${AUTHENTIQ_LEDGER_MODE:-simulation}
       - AUTHENTIQ_CHAIN_RPC_URL=${AUTHENTIQ_CHAIN_RPC_URL:-}
       - AUTHENTIQ_CHAIN_PRIVATE_KEY=${AUTHENTIQ_CHAIN_PRIVATE_KEY:-}
