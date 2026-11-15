@@ -80,7 +80,12 @@ jobs:
           toolchain: stable
 
       - name: Install Circom compiler
-        run: cargo install --git https://github.com/iden3/circom.git --tag v2.1.6 --locked circom
+        run: |
+          # Circom v2.1.6 has an `unused-assignments` warning in the
+          # `constraint_list` dependency that becomes fatal under
+          # `RUSTFLAGS=-D warnings`. Scope the allowance to this step only;
+          # do not weaken the project's global warning checks.
+          RUSTFLAGS="-A unused-assignments" cargo install --git https://github.com/iden3/circom.git --tag v2.1.6 --locked circom
 
       - name: Verify Circom compiler
         run: circom --version
