@@ -259,6 +259,11 @@ def update_dispute(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="A resolution summary is required to resolve a dispute",
             )
+        if payload.status == "resolved" and payload.determination is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="A determination is required to resolve a dispute",
+            )
         dispute.status = payload.status
         if payload.status == "resolved":
             dispute.resolved_at = utcnow()
@@ -267,6 +272,10 @@ def update_dispute(
                 registration.status = "verified"
     if payload.resolution is not None:
         dispute.resolution = payload.resolution
+    if payload.determination is not None:
+        dispute.determination = payload.determination
+    if payload.resolution_reason is not None:
+        dispute.resolution_reason = payload.resolution_reason
     for recipient in (dispute.claimant_id, dispute.respondent_id):
         if recipient:
             notify(
@@ -285,10 +294,20 @@ def update_dispute(
         actor_ref=admin.email,
         entity_type="dispute",
         entity_id=dispute.dispute_ref,
-        metadata={"status": dispute.status},
+        metadata={
+            "status": dispute.status,
+            "determination": dispute.determination,
+            "resolution_reason": dispute.resolution_reason,
+        },
     )
     db.commit()
-    return {"message": "Dispute updated", "status": dispute.status, "resolution": dispute.resolution}
+    return {
+        "message": "Dispute updated",
+        "status": dispute.status,
+        "resolution": dispute.resolution,
+        "determination": dispute.determination,
+        "resolution_reason": dispute.resolution_reason,
+    }
 
 
 @router.get("/organizations")

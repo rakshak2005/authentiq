@@ -26,7 +26,7 @@ from app.schemas.auth import (
 )
 from app.security.crypto import sha256_text, utcnow
 from app.security.passwords import hash_password, verify_password
-from app.security.rate_limit import login_limiter, register_limiter
+from app.security.rate_limit import login_limiter, register_limiter, reset_limiter
 from app.security.tokens import (
     create_access_token,
     create_refresh_token,
@@ -317,6 +317,22 @@ def update_me(payload: ProfileUpdateRequest, db: Session = Depends(get_db), user
 
 @router.post("/forgot-password", response_model=MessageResponse)
 def forgot_password(payload: ForgotPasswordRequest, request: Request, db: Session = Depends(get_db)):
+    ip = client_ip(request)
+    allowed, retry_after = reset_limiter.check(f"forgot:{ip}:{payload.email}", 5, 3600)
+    if not allowed:
+        append_audit(
+            db,
+            "password_reset_rate_limited",
+            actor_ref=payload.email,
+            metadata={"ip": ip},
+            ip_address=ip,
+        )
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many password reset requests. Retry in {retry_after} seconds.",
+            headers={"Retry-After": str(retry_after)},
+        )
     email = payload.email.lower().strip()
     user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
     if user:
@@ -340,7 +356,6 @@ def forgot_password(payload: ForgotPasswordRequest, request: Request, db: Sessio
         if settings.environment != "production":
             return MessageResponse(
                 message="Password reset token generated",
-                detail=token,
             )
     else:
         db.commit()
@@ -351,6 +366,22 @@ def forgot_password(payload: ForgotPasswordRequest, request: Request, db: Sessio
 
 @router.post("/reset-password", response_model=MessageResponse)
 def reset_password(payload: ResetPasswordRequest, request: Request, db: Session = Depends(get_db)):
+    ip = client_ip(request)
+    allowed, retry_after = reset_limiter.check(f"reset:{ip}", 10, 3600)
+    if not allowed:
+        append_audit(
+            db,
+            "password_reset_rate_limited",
+            actor_ref=payload.token[:8] if payload.token else "unknown",
+            metadata={"ip": ip},
+            ip_address=ip,
+        )
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many password reset attempts. Retry in {retry_after} seconds.",
+            headers={"Retry-After": str(retry_after)},
+        )
     try:
         decoded = decode_reset_token(payload.token)
     except ValueError as exc:

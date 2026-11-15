@@ -90,7 +90,7 @@ class ResetPasswordRequest(StrictModel):
 
 
 class ChangePasswordRequest(StrictModel):
-    current_password: str
+    current_password: str = Field(min_length=10)
     new_password: str
     confirm_password: str
 

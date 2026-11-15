@@ -23,6 +23,8 @@ COLUMN_MIGRATIONS: tuple[tuple[str, str, str], ...] = (
     ("ledger_transactions", "contract_address", "VARCHAR(42)"),
     ("ledger_transactions", "chain_id", "INTEGER"),
     ("ledger_transactions", "revision", "INTEGER"),
+    ("disputes", "determination", "VARCHAR(32)"),
+    ("disputes", "resolution_reason", "TEXT"),
 )
 
 # (index name, table, column)

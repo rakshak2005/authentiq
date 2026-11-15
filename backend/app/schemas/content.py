@@ -199,6 +199,8 @@ class DisputeCreateRequest(StrictModel):
 class DisputeStatusRequest(StrictModel):
     status: Literal["under_review", "evidence_requested", "resolved", "rejected"]
     resolution: str | None = Field(default=None, max_length=4000)
+    determination: Literal["claimant_wins", "respondent_wins", "inconclusive", "dismissed"] | None = None
+    resolution_reason: str | None = Field(default=None, max_length=2000)
 
 
 class AlertStatusRequest(StrictModel):
@@ -245,6 +247,8 @@ class AdminUserUpdateRequest(StrictModel):
 class AdminDisputeUpdateRequest(StrictModel):
     status: Literal["open", "under_review", "evidence_requested", "resolved"] | None = None
     resolution: str | None = Field(default=None, max_length=4000)
+    determination: Literal["claimant_wins", "respondent_wins", "inconclusive", "dismissed"] | None = None
+    resolution_reason: str | None = Field(default=None, max_length=2000)
 
 
 class EvidenceCreateRequest(StrictModel):

@@ -96,14 +96,19 @@ def test_dispute_lifecycle_with_evidence_and_verifier_resolution(client, user_fa
         json={
             "status": "resolved",
             "resolution": "Evidence reviewed. Registration remains on record with a dispute annotation.",
+            "determination": "respondent_wins",
+            "resolution_reason": "Claimant failed to provide verifiable proof of prior creation; respondent holds the earliest registration.",
         },
     )
     assert resolved.status_code == 200, resolved.text
     assert resolved.json()["status"] == "resolved"
+    assert resolved.json()["determination"] == "respondent_wins"
 
     final = client.get(f"/api/disputes/{dispute['id']}", headers=claimant["headers"]).json()
     assert final["status"] == "resolved"
     assert final["resolved_at"]
+    assert final["determination"] == "respondent_wins"
+    assert final["resolution_reason"] == "Claimant failed to provide verifiable proof of prior creation; respondent holds the earliest registration."
     assert final["can_review"] is False
 
     verifier_list = client.get("/api/disputes", headers=verifier["headers"])

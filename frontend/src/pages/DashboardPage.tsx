@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -12,15 +13,18 @@ import {
   PlusCircle,
   RefreshCw,
   ShieldCheck,
+  Search,
   Users,
 } from "lucide-react";
 import { PageHeader, ErrorState, LoadingBlock, EmptyState } from "@/components/common/page-states";
+import { SearchInput } from "@/components/common/search-input";
 import { StatCard } from "@/components/common/stat-card";
 import { StatusBadge, LedgerBadge, LedgerStatusIndicator } from "@/components/common/status-badge";
 import { HashValue } from "@/components/common/hash-value";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { api } from "@/lib/api";
 import type { AuditEntry, DashboardActivity, DashboardSummary, LedgerStatus } from "@/lib/types";
@@ -36,8 +40,15 @@ interface AuditChain {
   message?: string;
 }
 
+const ASSET_TYPE_FILTERS = ["document", "image", "audio", "video", "code", "other"];
+const STATUS_FILTERS = ["registered", "verified", "pending", "disputed"];
+
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [assetTypeFilter, setAssetTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+
   const summary = useQuery({ queryKey: ["dashboard-summary"], queryFn: () => api.get<DashboardSummary>(withReaderTimezone("/dashboard/summary")) });
   const activity = useQuery({ queryKey: ["dashboard-activity"], queryFn: () => api.get<DashboardActivity>("/dashboard/activity") });
   const ledger = useQuery({ queryKey: ["ledger-status"], queryFn: () => api.get<LedgerStatus>("/ledger/status") });
@@ -59,6 +70,19 @@ export default function DashboardPage() {
   const stats = summary.data.stats;
   const data = activity.data;
 
+  // Filter recent registrations
+  const allRegistrations = data?.recent_registrations || [];
+  const filteredRegistrations = useMemo(() => {
+    return allRegistrations.filter((registration) => {
+      const matchesSearch =
+        registration.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        registration.registration_id.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesAssetType = !assetTypeFilter || registration.asset_type === assetTypeFilter;
+      const matchesStatus = !statusFilter || registration.status === statusFilter;
+      return matchesSearch && matchesAssetType && matchesStatus;
+    });
+  }, [allRegistrations, searchQuery, assetTypeFilter, statusFilter]);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -66,6 +90,36 @@ export default function DashboardPage() {
         description="Every figure below is computed from your authorized records. No fabricated statistics, no imaginary chain activity."
         actions={
           <>
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Search creations by title or ID"
+              className="w-72"
+            />
+            <select
+              defaultValue=""
+              onChange={(e) => setAssetTypeFilter(e.target.value)}
+              className="h-10 w-48 appearance-none rounded-lg border border-input bg-background/50 px-3 pr-9 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">All types</option>
+              {ASSET_TYPE_FILTERS.map((type) => (
+                <option key={type} value={type}>
+                  {titleCase(type)}
+                </option>
+              ))}
+            </select>
+            <select
+              defaultValue=""
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-10 w-48 appearance-none rounded-lg border border-input bg-background/50 px-3 pr-9 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <option value="">All statuses</option>
+              {STATUS_FILTERS.map((status) => (
+                <option key={status} value={status}>
+                  {titleCase(status)}
+                </option>
+              ))}
+            </select>
             <Button variant="outline" size="sm" onClick={() => { summary.refetch(); activity.refetch(); ledger.refetch(); audit.refetch(); }}>
               <RefreshCw /> Refresh
             </Button>
@@ -96,15 +150,17 @@ export default function DashboardPage() {
           <CardHeader className="flex-row items-center justify-between">
             <div>
               <CardTitle>Recent creations</CardTitle>
-              <CardDescription>Newest fingerprints in your workspace.</CardDescription>
+              <CardDescription>
+                {filteredRegistrations.length} of {allRegistrations.length} fingerprints in your workspace.
+              </CardDescription>
             </div>
             <Button asChild variant="ghost" size="sm">
               <Link to="/timeline">Open timeline <ArrowUpRight /></Link>
             </Button>
           </CardHeader>
           <CardContent className="space-y-2">
-            {data?.recent_registrations?.length ? (
-              data.recent_registrations.map((registration) => (
+            {filteredRegistrations.length ? (
+              filteredRegistrations.map((registration) => (
                 <Link
                   key={registration.id}
                   to={`/registrations/${registration.id}`}
@@ -126,17 +182,23 @@ export default function DashboardPage() {
                       {registration.registration_id} · {formatBytes(registration.file_size)} · {relativeTime(registration.registered_at)}
                       {registration.pending_ownership ? " · ownership pending confirmation" : ""}
                     </p>
-                  </div>
-                  <div className="hidden text-right sm:block">
-                    <StatusBadge status={registration.pending_ownership ? "pending_recipient" : registration.status} />
-                    <p className="mt-1 text-[10px] text-muted-foreground">{titleCase(registration.asset_type)}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <StatusBadge status={registration.pending_ownership ? "pending_recipient" : registration.status} />
+                      {registration.proof_count && registration.proof_count > 0 && (
+                        <Badge variant="green" className="shrink-0" title={`${registration.proof_count} verified proof(s)`}>
+                          <ShieldCheck className="size-3" />
+                          {registration.proof_count}
+                        </Badge>
+                      )}
+                      <p className="mt-1 text-[10px] text-muted-foreground">{titleCase(registration.asset_type)}</p>
+                    </div>
                   </div>
                 </Link>
               ))
             ) : (
               <EmptyState
                 title="No creations registered"
-                description="Register a file to generate a real SHA-256 fingerprint, commitment, and ledger record."
+                description={searchQuery || assetTypeFilter || statusFilter ? "No creations match your current filters. Try adjusting your search or filters." : "Register a file to generate a real SHA-256 fingerprint, commitment, and ledger record."}
                 icon={<Fingerprint className="size-5" />}
                 action={
                   <Button asChild size="sm">
