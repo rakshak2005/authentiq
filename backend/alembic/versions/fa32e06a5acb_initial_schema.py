@@ -17,6 +17,13 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _table_exists(conn, table: str) -> bool:
+    from sqlalchemy import inspect
+
+    inspector = inspect(conn)
+    return table in inspector.get_table_names()
+
+
 def _has_column(conn, table: str, column: str) -> bool:
     from sqlalchemy import inspect
 
@@ -41,32 +48,40 @@ def upgrade() -> None:
     Uses SQLAlchemy's inspector so this migration is idempotent and works on
     both SQLite (tests) and PostgreSQL (production). Safe to run after
     Base.metadata.create_all() has already created columns defined on models.
+
+    Only adds columns/indexes to tables that already exist. If `create_all()`
+    created the table already, the column/index already exists and is skipped.
     """
     conn = op.get_context().connection
 
-    if not _has_column(conn, "disputes", "determination"):
-        op.add_column("disputes", sa.Column("determination", sa.String(length=32), nullable=True))
-    if not _has_column(conn, "disputes", "resolution_reason"):
-        op.add_column("disputes", sa.Column("resolution_reason", sa.Text(), nullable=True))
-    if not _has_index(conn, "ledger_transactions", "ix_ledger_transactions_idempotency_key"):
-        op.create_index(
-            op.f("ix_ledger_transactions_idempotency_key"),
-            "ledger_transactions",
-            ["idempotency_key"],
-            unique=True,
-        )
+    if _table_exists(conn, "disputes"):
+        if not _has_column(conn, "disputes", "determination"):
+            op.add_column("disputes", sa.Column("determination", sa.String(length=32), nullable=True))
+        if not _has_column(conn, "disputes", "resolution_reason"):
+            op.add_column("disputes", sa.Column("resolution_reason", sa.Text(), nullable=True))
+
+    if _table_exists(conn, "ledger_transactions"):
+        if not _has_index(conn, "ledger_transactions", "ix_ledger_transactions_idempotency_key"):
+            op.create_index(
+                op.f("ix_ledger_transactions_idempotency_key"),
+                "ledger_transactions",
+                ["idempotency_key"],
+                unique=True,
+            )
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     conn = op.get_context().connection
 
-    if _has_column(conn, "disputes", "resolution_reason"):
-        op.drop_column("disputes", "resolution_reason")
-    if _has_column(conn, "disputes", "determination"):
-        op.drop_column("disputes", "determination")
-    if _has_index(conn, "ledger_transactions", "ix_ledger_transactions_idempotency_key"):
-        op.drop_index(
-            op.f("ix_ledger_transactions_idempotency_key"),
-            table_name="ledger_transactions",
-        )
+    if _table_exists(conn, "disputes"):
+        if _has_column(conn, "disputes", "resolution_reason"):
+            op.drop_column("disputes", "resolution_reason")
+        if _has_column(conn, "disputes", "determination"):
+            op.drop_column("disputes", "determination")
+    if _table_exists(conn, "ledger_transactions"):
+        if _has_index(conn, "ledger_transactions", "ix_ledger_transactions_idempotency_key"):
+            op.drop_index(
+                op.f("ix_ledger_transactions_idempotency_key"),
+                table_name="ledger_transactions",
+            )

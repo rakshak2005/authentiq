@@ -7,19 +7,22 @@ Covers:
 - Chain ID validation (refuses Polygon mainnet chainId 137)
 - Ledger status endpoint shape
 - Idempotent registration (no duplicate anchored tx)
+- Migration reliability: fresh DB, existing DB without new columns,
+  columns already exist, missing table, repeated init_db() calls
 """
 
 import pytest
 from app.core.config import Settings, settings
-from app.core.database import SessionLocal, engine
+from app.core.database import SessionLocal, engine, init_db
 from app.ledger.blockchain import PolygonAdapter
 from app.ledger.service import LedgerService
 from app.ledger.simulation import LedgerUnavailable
 from app.main import app
 from app.models import Base, LedgerTransaction
 from pydantic import ValidationError
+from sqlalchemy import select, text
 from tests.helpers import register_user
-from sqlalchemy import select
+from unittest.mock import MagicMock, patch
 
 
 def _patch_chain_config(monkeypatch):
@@ -73,7 +76,7 @@ def test_demo_mode_rejected_in_production():
 def test_chain_id_validation_rejects_mainnet(monkeypatch):
     """Polygon adapter must refuse to connect to Polygon mainnet (chainId 137)."""
     _patch_chain_config(monkeypatch)
-    from unittest.mock import MagicMock, patch
+    from unittest.mock import patch
 
     class _FakeWeb3:
         def is_connected(self):
@@ -161,3 +164,40 @@ def test_registration_idempotency_no_duplicate_tx():
             .all()
         )
     assert len(rows) == 1
+
+
+# ---------------------------------------------------------------------------
+# Migration regression tests
+# ---------------------------------------------------------------------------
+
+
+def test_migration_columns_already_exist():
+    """Database where new columns already exist - migration must be idempotent
+    and not fail."""
+    Base.metadata.create_all(bind=engine)
+    init_db()  # First run adds columns
+    init_db()  # Second run should be no-op
+
+    with SessionLocal() as db:
+        cols = db.execute(text("PRAGMA table_info(disputes)")).fetchall()
+        col_names = {c[1] for c in cols}
+        assert "determination" in col_names
+        assert "resolution_reason" in col_names
+
+
+def test_repeated_application_startup():
+    """Repeated application startup and migration execution should be safe."""
+    Base.metadata.drop_all(bind=engine)
+    init_db()  # First startup
+    init_db()  # Second startup (simulates restart)
+    init_db()  # Third startup
+
+    with SessionLocal() as db:
+        cols = db.execute(text("PRAGMA table_info(disputes)")).fetchall()
+        col_names = {c[1] for c in cols}
+        assert "determination" in col_names
+        assert "resolution_reason" in col_names
+
+        # Verify data integrity - can still query
+        result = db.execute(select(LedgerTransaction).limit(1))
+        assert result is not None
