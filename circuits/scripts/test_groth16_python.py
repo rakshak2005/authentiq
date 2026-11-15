@@ -29,6 +29,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import shutil
 from pathlib import Path
 
 # Add circuits/scripts to path for the Groth16 service
@@ -58,13 +59,14 @@ def _compute_poseidon(fingerprint: str, secret: str) -> str:
 
     input_path.write_text(json.dumps({"fingerprint": fingerprint, "secret": secret}))
 
-    snarkjs_cli = Path(__file__).resolve().parents[2] / "circuits" / "node_modules" / "snarkjs" / "cli.js"
+    npx = shutil.which("npx") or shutil.which("npx.cmd") or "npx"
 
     # Calculate witness
     subprocess.run(
         [
-            "node",
-            str(snarkjs_cli),
+            npx,
+            "--no-install",
+            "snarkjs",
             "wtns",
             "calculate",
             str(BUILD_DIR / "commitment.wasm"),
@@ -75,13 +77,15 @@ def _compute_poseidon(fingerprint: str, secret: str) -> str:
         text=True,
         timeout=60,
         check=True,
+        cwd=str(Path(__file__).resolve().parents[2] / "circuits"),
     )
 
     # Export witness as JSON
     subprocess.run(
         [
-            "node",
-            str(snarkjs_cli),
+            npx,
+            "--no-install",
+            "snarkjs",
             "wtns",
             "export",
             "json",
@@ -92,6 +96,7 @@ def _compute_poseidon(fingerprint: str, secret: str) -> str:
         text=True,
         timeout=60,
         check=True,
+        cwd=str(Path(__file__).resolve().parents[2] / "circuits"),
     )
 
     witness = json.loads(witness_json.read_text())
@@ -145,7 +150,10 @@ def main() -> None:
         valid = verify_proof(proof.proof, proof.public_signals)
         check(not valid, "Wrong commitment proof fails verification")
     except Groth16Error as e:
-        check(True, f"Wrong commitment failed at generation (expected): {e}")
+        if any(marker in str(e).lower() for marker in ("assert failed", "invalid public input", "invalid proof", "error in template", "constraint")):
+            check(True, f"Wrong commitment rejected by the circuit: {e}")
+        else:
+            raise
 
     # ------------------------------------------------------------------
     # Test 3: Wrong secret (invalid private witness)
@@ -157,7 +165,10 @@ def main() -> None:
         valid = verify_proof(proof.proof, proof.public_signals)
         check(not valid, "Wrong secret proof fails verification")
     except Groth16Error as e:
-        check(True, f"Wrong secret failed at generation (expected): {e}")
+        if any(marker in str(e).lower() for marker in ("assert failed", "invalid public input", "invalid proof", "error in template", "constraint")):
+            check(True, f"Wrong secret rejected by the circuit: {e}")
+        else:
+            raise
 
     # ------------------------------------------------------------------
     # Test 4: Tampered fingerprint (invalid public input)
@@ -169,7 +180,10 @@ def main() -> None:
         valid = verify_proof(proof.proof, proof.public_signals)
         check(not valid, "Tampered fingerprint proof fails verification")
     except Groth16Error as e:
-        check(True, f"Tampered fingerprint failed at generation (expected): {e}")
+        if any(marker in str(e).lower() for marker in ("assert failed", "invalid public input", "invalid proof", "error in template", "constraint")):
+            check(True, f"Tampered fingerprint rejected by the circuit: {e}")
+        else:
+            raise
 
     # ------------------------------------------------------------------
     # Test 5: Independent commitments
@@ -190,7 +204,7 @@ def main() -> None:
     print("\n=== Test 7: Cross-verification ===")
     proof1 = generate_proof(FP1, SEC1, COMM1)
     # Try to verify proof1 with public signals from a different input
-    wrong_public = {"fingerprint": FP2, "commitment": COMM2}
+    wrong_public = [FP2, COMM2]
     valid = verify_proof(proof1.proof, wrong_public)
     check(not valid, "Cross-verification with mismatched public signals fails")
 

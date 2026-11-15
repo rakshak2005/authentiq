@@ -27,7 +27,7 @@ include "circomlib_local/comparators.circom";
  */
 template OwnershipCommitment() {
     signal input fingerprint;
-    signal private input secret;
+    signal input secret;
     signal input commitment;
 
     // Non-degeneracy: fingerprint must not be zero
@@ -51,4 +51,4 @@ template OwnershipCommitment() {
     secretCheck.out === 0;
 }
 
-component main = OwnershipCommitment();
+component main {public [fingerprint, commitment]} = OwnershipCommitment();

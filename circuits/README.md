@@ -28,15 +28,18 @@ New-Item -ItemType Directory -Force build | Out-Null
 npm run build
 ```
 
-The build produces `build/ownership.r1cs`, `build/ownership_js/ownership.wasm`, and `build/ownership.sym`.
+The build creates `build/` before invoking Circom and produces
+`build/ownership.r1cs`, `build/ownership.wasm`, `build/ownership_js/ownership.wasm`,
+`build/ownership.sym`, and `build/commitment.wasm`. The root WASM paths are used by
+the proof scripts; the Circom-generated `*_js/` directories are retained for compatibility.
 
 ## Trusted setup and proof
 
 ```powershell
 cd circuits
-npx snarkjs powersoftau new bn128 14 build/pot14_0000.ptau -v
-npx snarkjs powersoftau contribute build/pot14_0000.ptau build/pot14_0001.ptau --name="AUTHENTIQ phase 1" -v
-npx snarkjs powersoftau prepare phase2 build/pot14_0001.ptau build/pot14_final.ptau -v
+npx --no-install snarkjs powersoftau new bn128 8 build/pot8_0000.ptau -v
+npx --no-install snarkjs powersoftau contribute build/pot8_0000.ptau build/pot8_final.ptau --name="AUTHENTIQ phase 1" -v
+npx --no-install snarkjs powersoftau prepare phase2 build/pot8_final.ptau build/pot8_final_phase2.ptau -v
 npm run setup
 npm run contribute
 npm run export

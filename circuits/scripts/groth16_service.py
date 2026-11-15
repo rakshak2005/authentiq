@@ -12,6 +12,7 @@ protocol. It does not modify or replace any Schnorr code.
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,6 +21,7 @@ from typing import Any
 CIRCUITS_DIR = Path(__file__).resolve().parents[2] / "circuits"
 GROTH16_JS = CIRCUITS_DIR / "scripts" / "groth16.js"
 BUILD_DIR = CIRCUITS_DIR / "build"
+NPX = shutil.which("npx") or shutil.which("npx.cmd") or "npx"
 
 
 class Groth16Error(RuntimeError):
@@ -38,7 +40,8 @@ def _run_node(args: list[str], input_text: str | None = None) -> str:
     """Run a node command and return stdout."""
     try:
         result = subprocess.run(
-            ["node"] + args,
+            [NPX, "--no-install", "snarkjs"] + args,
+            cwd=CIRCUITS_DIR,
             capture_output=True,
             text=True,
             input=input_text,
@@ -126,8 +129,9 @@ def generate_proof(
 
     result = subprocess.run(
         [
-            "node",
-            str(GROTH16_JS.parent.parent / "node_modules" / "snarkjs" / "cli.js"),
+            NPX,
+            "--no-install",
+            "snarkjs",
             "groth16",
             "fullprove",
             str(input_path),
@@ -138,11 +142,13 @@ def generate_proof(
         ],
         capture_output=True,
         text=True,
+        cwd=CIRCUITS_DIR,
         timeout=120,
     )
 
     if result.returncode != 0:
-        raise Groth16Error(f"Proof generation failed: {result.stderr.strip()}")
+        output = f"{result.stdout}\n{result.stderr}".strip()
+        raise Groth16Error(f"Proof generation failed: {output}")
 
     if not proof_path.exists() or not public_path.exists():
         raise Groth16Error("Proof generation did not produce output files.")
@@ -181,13 +187,9 @@ def verify_proof(
 
     result = subprocess.run(
         [
-            "node",
-            str(
-                CIRCUITS_DIR
-                / "node_modules"
-                / "snarkjs"
-                / "cli.js"
-            ),
+            NPX,
+            "--no-install",
+            "snarkjs",
             "groth16",
             "verify",
             str(vk_path),
@@ -199,8 +201,15 @@ def verify_proof(
         timeout=60,
     )
 
-    output = result.stdout.strip()
-    return "OK!" in output or "OK" in output
+    output = f"{result.stdout}\n{result.stderr}".strip()
+    if result.returncode == 0 and ("OK!" in output or output == "OK"):
+        return True
+    if result.returncode != 0 and any(
+        marker in output.lower()
+        for marker in ("invalid proof", "invalid public input", "assert failed")
+    ):
+        return False
+    raise Groth16Error(f"Proof verification failed unexpectedly: {output}")
 
 
 def verify_proof_from_files(
@@ -223,13 +232,9 @@ def verify_proof_from_files(
 
     result = subprocess.run(
         [
-            "node",
-            str(
-                CIRCUITS_DIR
-                / "node_modules"
-                / "snarkjs"
-                / "cli.js"
-            ),
+            NPX,
+            "--no-install",
+            "snarkjs",
             "groth16",
             "verify",
             str(vk_path),
@@ -241,5 +246,12 @@ def verify_proof_from_files(
         timeout=60,
     )
 
-    output = result.stdout.strip()
-    return "OK!" in output or "OK" in output
+    output = f"{result.stdout}\n{result.stderr}".strip()
+    if result.returncode == 0 and ("OK!" in output or output == "OK"):
+        return True
+    if result.returncode != 0 and any(
+        marker in output.lower()
+        for marker in ("invalid proof", "invalid public input", "assert failed")
+    ):
+        return False
+    raise Groth16Error(f"Proof verification failed unexpectedly: {output}")

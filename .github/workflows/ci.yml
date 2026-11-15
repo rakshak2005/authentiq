@@ -75,19 +75,36 @@ jobs:
           cache: npm
           cache-dependency-path: circuits/package-lock.json
 
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install Circom compiler
+        run: cargo install --git https://github.com/iden3/circom.git --tag v2.1.6 --locked circom
+
+      - name: Verify Circom compiler
+        run: circom --version
+
       - name: Install circuit dependencies
         run: npm ci
 
       - name: Compile circom circuit
+        run: npm run build
+
+      - name: Create ephemeral Groth16 test setup
         run: |
-          node node_modules/circom/cli.js ownership.circom \
-            --r1cs build/ownership.r1cs \
-            --wasm build/ownership.wasm \
-            --sym build/ownership.sym \
-            -o build
+          npx --no-install snarkjs powersoftau new bn128 8 build/pot8_0000.ptau
+          echo "AUTHENTIQ CI test entropy" | npx --no-install snarkjs powersoftau contribute build/pot8_0000.ptau build/pot8_final.ptau --name="AUTHENTIQ CI"
+          npx --no-install snarkjs powersoftau prepare phase2 build/pot8_final.ptau build/pot8_final_phase2.ptau
+          npm run setup
+          echo "AUTHENTIQ CI zkey entropy" | npm run contribute
+          npm run export
 
       - name: Run Groth16 proof tests
         run: node scripts/test_groth16.js
+
+      - name: Run Python Groth16 proof tests
+        run: python scripts/test_groth16_python.py
 
   docs:
     name: Documentation checks

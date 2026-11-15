@@ -18,13 +18,19 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 
-const SNARKJS = path.join(__dirname, "..", "node_modules", "snarkjs", "cli.js");
+const NPX = "npx";
+const SHELL = process.platform === "win32";
+const CIRCUITS_DIR = path.join(__dirname, "..");
 const BUILD_DIR = path.join(__dirname, "..", "build");
 
 const OWNERSHIP_WASM = path.join(BUILD_DIR, "ownership.wasm");
 const OWNERSHIP_ZKEY = path.join(BUILD_DIR, "ownership_final.zkey");
 const VK_PATH = path.join(BUILD_DIR, "verification_key.json");
 const COMMITMENT_WASM = path.join(BUILD_DIR, "commitment.wasm");
+
+function circuitPath(filePath) {
+  return path.relative(CIRCUITS_DIR, filePath);
+}
 
 // BN254 scalar field prime
 const P =
@@ -44,7 +50,9 @@ function assert(condition, message) {
 }
 
 function runSnarkjs(args) {
-  return execFileSync("node", [SNARKJS, ...args], {
+  return execFileSync(NPX, ["--no-install", "snarkjs", ...args], {
+    cwd: CIRCUITS_DIR,
+    shell: SHELL,
     encoding: "utf8",
     maxBuffer: 50 * 1024 * 1024,
   }).trim();
@@ -61,15 +69,31 @@ function computePoseidon(fingerprintDec, secretDec) {
   );
 
   execFileSync(
-    "node",
-    [SNARKJS, "wtns", "calculate", COMMITMENT_WASM, inputPath, witnessPath],
-    { encoding: "utf8", maxBuffer: 50 * 1024 * 1024 }
+    NPX,
+    [
+      "--no-install",
+      "snarkjs",
+      "wtns",
+      "calculate",
+      circuitPath(COMMITMENT_WASM),
+      circuitPath(inputPath),
+      circuitPath(witnessPath),
+    ],
+    { cwd: CIRCUITS_DIR, shell: SHELL, encoding: "utf8", maxBuffer: 50 * 1024 * 1024 }
   );
 
   execFileSync(
-    "node",
-    [SNARKJS, "wtns", "export", "json", witnessPath, witnessJsonPath],
-    { encoding: "utf8", maxBuffer: 50 * 1024 * 1024 }
+    NPX,
+    [
+      "--no-install",
+      "snarkjs",
+      "wtns",
+      "export",
+      "json",
+      circuitPath(witnessPath),
+      circuitPath(witnessJsonPath),
+    ],
+    { cwd: CIRCUITS_DIR, shell: SHELL, encoding: "utf8", maxBuffer: 50 * 1024 * 1024 }
   );
 
   const witness = JSON.parse(fs.readFileSync(witnessJsonPath, "utf8"));
@@ -92,18 +116,19 @@ function generateProof(fingerprintDec, secretDec, commitmentDec) {
   );
 
   execFileSync(
-    "node",
+    NPX,
     [
-      SNARKJS,
+    "--no-install",
+    "snarkjs",
       "groth16",
       "fullprove",
-      inputPath,
-      OWNERSHIP_WASM,
-      OWNERSHIP_ZKEY,
-      proofPath,
-      publicPath,
+      circuitPath(inputPath),
+      circuitPath(OWNERSHIP_WASM),
+      circuitPath(OWNERSHIP_ZKEY),
+      circuitPath(proofPath),
+      circuitPath(publicPath),
     ],
-    { encoding: "utf8", maxBuffer: 50 * 1024 * 1024 }
+    { cwd: CIRCUITS_DIR, shell: SHELL, encoding: "utf8", maxBuffer: 50 * 1024 * 1024 }
   );
 
   const proof = JSON.parse(fs.readFileSync(proofPath, "utf8"));
@@ -121,15 +146,26 @@ function verifyProof(proof, publicSignals) {
 
   try {
     const result = execFileSync(
-      "node",
-      [SNARKJS, "groth16", "verify", VK_PATH, publicPath, proofPath],
-      { encoding: "utf8", maxBuffer: 50 * 1024 * 1024 }
+      NPX,
+      [
+        "--no-install",
+        "snarkjs",
+        "groth16",
+        "verify",
+        circuitPath(VK_PATH),
+        circuitPath(publicPath),
+        circuitPath(proofPath),
+      ],
+      { cwd: CIRCUITS_DIR, shell: SHELL, encoding: "utf8", maxBuffer: 50 * 1024 * 1024 }
     );
     const out = result.trim();
     return out.includes("OK!") || out.includes("OK");
   } catch (err) {
-    // snarkjs exits with code 1 for invalid proofs
-    return false;
+    const output = `${err.stdout || ""}\n${err.stderr || ""}`;
+    if (/invalid proof|invalid public input|assert failed/i.test(output)) {
+      return false;
+    }
+    throw err;
   }
 }
 
@@ -163,7 +199,12 @@ try {
   const valid2 = verifyProof(result2.proof, result2.publicSignals);
   assert(!valid2, "Wrong commitment proof fails verification");
 } catch (err) {
-  assert(true, "Wrong commitment proof generation or verification failed (expected)");
+  const output = `${err.stdout || ""}\n${err.stderr || ""}`;
+  if (/assert failed|invalid public input|invalid proof|error in template|constraint/i.test(output)) {
+    assert(true, "Wrong commitment rejected by the circuit");
+  } else {
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -179,7 +220,12 @@ try {
   const valid3 = verifyProof(result3.proof, result3.publicSignals);
   assert(!valid3, "Wrong secret proof fails verification");
 } catch (err) {
-  assert(true, "Wrong secret proof generation or verification failed (expected)");
+  const output = `${err.stdout || ""}\n${err.stderr || ""}`;
+  if (/assert failed|invalid public input|invalid proof|error in template|constraint/i.test(output)) {
+    assert(true, "Wrong secret rejected by the circuit");
+  } else {
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -193,7 +239,12 @@ try {
   const valid4 = verifyProof(result4.proof, result4.publicSignals);
   assert(!valid4, "Tampered fingerprint proof fails verification");
 } catch (err) {
-  assert(true, "Tampered fingerprint proof generation or verification failed (expected)");
+  const output = `${err.stdout || ""}\n${err.stderr || ""}`;
+  if (/assert failed|invalid public input|invalid proof|error in template|constraint/i.test(output)) {
+    assert(true, "Tampered fingerprint rejected by the circuit");
+  } else {
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------
