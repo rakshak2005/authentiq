@@ -29,6 +29,7 @@ import IntegrityCenterPage from "@/pages/IntegrityCenterPage";
 import SettingsPage from "@/pages/SettingsPage";
 import PublicVerifyPage from "@/pages/PublicVerifyPage";
 import PublicRecordsPage from "@/pages/PublicRecordsPage";
+import VerifierWorkspacePage from "@/pages/VerifierWorkspacePage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import LandingPage from "@/pages/LandingPage";
 
@@ -63,6 +64,7 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify/:verificationId" element={<PublicVerifyPage />} />
       <Route path="/verify" element={<PublicAnonymousVerifyPage />} />
+      <Route path="/verify/workspace" element={<VerifierWorkspacePage />} />
       <Route path="/join" element={<JoinOrganizationPage />} />
       <Route path="/records" element={<PublicRecordsPage />} />
 

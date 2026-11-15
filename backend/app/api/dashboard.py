@@ -228,7 +228,13 @@ def summary(
 def activity(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     registrations, pending_ids = _scoped_registrations(db, user)
     registrations = sorted(registrations, key=lambda item: item.registered_at, reverse=True)[:6]
-    names = {registration.user_id: (db.get(User, registration.user_id).display_name if db.get(User, registration.user_id) else None) for registration in registrations}
+    # Batch-load user names to avoid N+1 queries
+    user_ids = {item.user_id for item in registrations}
+    user_names = {
+        item.id: item.display_name
+        for item in db.execute(select(User).where(User.id.in_(user_ids))).scalars().all()
+    }
+    names = {registration.user_id: user_names.get(registration.user_id) for registration in registrations}
     entities = _entity_ids(db, user)
     transactions = db.execute(
         select(LedgerTransaction)

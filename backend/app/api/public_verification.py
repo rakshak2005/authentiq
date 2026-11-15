@@ -20,7 +20,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import client_ip
 from app.ledger import ledger_service
-from app.models import Registration, ZkpChallenge, ZkpProof
+from app.models import Organization, Registration, ZkpChallenge, ZkpProof
 from app.schemas.content import (
     AnonymousChallengeRequest,
     AnonymousProofVerifyRequest,
@@ -269,4 +269,54 @@ def public_fingerprint_check(
         "registered": total > 0,
         "records": total,
         "note": "Existence only. Proving the private ownership claim requires the creator's verification key.",
+    }
+
+
+@router.get("/lookup/{registration_id}")
+def public_lookup(
+    registration_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Public lookup of a registration by its reference ID.
+
+    Returns only public record fields that a verifier needs to confirm
+    ownership: reference, fingerprint, commitment, ledger mode, transaction,
+    and timestamp. No original file, private witness, or personal identity
+    is disclosed.
+    """
+    ip = client_ip(request)
+    allowed, retry_after = proof_limiter.check(f"public-lookup:{ip}", 120, 3600)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many lookup requests. Retry in {retry_after} seconds.",
+        )
+
+    registration = db.execute(
+        select(Registration).where(Registration.registration_id == registration_id)
+    ).scalar_one_or_none()
+    if not registration:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No registration exists for that reference ID",
+        )
+
+    return {
+        "registration_reference": registration.registration_id,
+        "registration_uuid": str(registration.id),
+        "title": registration.title if registration.privacy == "public" else None,
+        "fingerprint": registration.sha256,
+        "commitment": registration.commitment,
+        "poseidon_commitment": registration.poseidon_commitment,
+        "registered_at": registration.registered_at.isoformat() if registration.registered_at else None,
+        "status": registration.status,
+        "ledger_mode": registration.ledger_mode,
+        "ledger_tx_id": registration.ledger_tx_id,
+        "asset_type": registration.asset_type,
+        "privacy": registration.privacy,
+        "organization": (
+            registration.organization.name if registration.organization_id and registration.organization else None
+        ),
+        "note": "Public record fields only. Proving ownership requires submitting a valid zero-knowledge proof.",
     }
