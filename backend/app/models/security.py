@@ -71,6 +71,8 @@ class Dispute(Base, UUIDMixin, TimestampMixin):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="open", nullable=False)
     resolution: Mapped[str | None] = mapped_column(Text, nullable=True)
+    determination: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    resolution_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     earliest_registration_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

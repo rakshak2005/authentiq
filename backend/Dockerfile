@@ -4,7 +4,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-WORKDIR /srv
+# WORKDIR must match the path assumptions in backend/app/core/config.py:
+#   PROJECT_ROOT = parents[2] of backend/app/core/config.py  -> /srv/backend
+#   storage_dir  = PROJECT_ROOT / "storage"                  -> /srv/storage
+# docker-compose mounts storage_data at /srv/storage, so persistent
+# storage writes land on the named volume.
+WORKDIR /srv/backend
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential libpq-dev curl \
@@ -16,8 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 
 RUN useradd --create-home --uid 10001 authentiq \
-    && mkdir -p /data/storage/uploads /data/storage/evidence \
-    && chown -R authentiq:authentiq /srv /data
+    && mkdir -p /srv/storage/uploads /srv/storage/evidence \
+    && chown -R authentiq:authentiq /srv
 
 USER authentiq
 

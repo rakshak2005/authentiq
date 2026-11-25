@@ -1,3 +1,4 @@
+import hashlib
 import math
 import shutil
 from pathlib import Path
@@ -14,7 +15,7 @@ from app.models import Upload, User
 from app.schemas.content import UploadInitiateRequest, UploadOut
 from app.security.crypto import sha256_hex
 from app.services.audit import append_audit
-from app.storage.files import encrypt_file_to, sha256_file
+from app.storage.files import encrypt_file_to
 from app.storage.scanner import scan_path
 from app.models import FileChunk
 
@@ -163,16 +164,26 @@ def complete_upload(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Chunk ordering is invalid")
         if not Path(chunk.storage_path).exists():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Chunk {expected_index} is missing from storage")
-        if sha256_file(Path(chunk.storage_path)) != chunk.sha256:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Chunk {expected_index} is corrupted")
+
+    # Single-pass assembly: read each chunk once, verify hash, write to assembled,
+    # and update the running SHA-256. This avoids reading each chunk twice
+    # (once for hash verification, once for assembly) and eliminates the
+    # separate sha256_file() pass over the assembled file.
     folder = _upload_dir(upload.id)
     assembled = folder / "assembled.bin"
+    final_hasher = hashlib.sha256()
     with assembled.open("wb") as writer:
         for chunk in chunks:
-            writer.write(Path(chunk.storage_path).read_bytes())
+            chunk_data = Path(chunk.storage_path).read_bytes()
+            if sha256_hex(chunk_data) != chunk.sha256:
+                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Chunk {chunk.chunk_index} is corrupted")
+            final_hasher.update(chunk_data)
+            writer.write(chunk_data)
+
     if assembled.stat().st_size != upload.size_bytes:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Assembled file size does not match the declared size")
-    final_hash = sha256_file(assembled)
+
+    final_hash = final_hasher.hexdigest()
     if client_sha256 and client_sha256.lower() != final_hash:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

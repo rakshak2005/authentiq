@@ -1,4 +1,9 @@
 import type { Config } from "tailwindcss";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+const animateModule = require("tailwindcss-animate");
+const animate = (animateModule.default ?? animateModule) as any;
 
 const neutral = {
   50: "#f7f7f7",
@@ -108,5 +113,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [animate],
 } satisfies Config;

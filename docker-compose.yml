@@ -1,36 +1,69 @@
-name: authentiq
+version: "3.8"
 
-# The database is an external PostgreSQL instance (Neon by default) configured
-# through AUTHENTIQ_DATABASE_URL in .env. No local database container is needed.
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: authentiq-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-authentiq}
+      POSTGRES_USER: ${POSTGRES_USER:-authentiq}
+      # POSTGRES_PASSWORD must be set explicitly (see .env.example). It is
+      # intentionally NOT hardcoded here. Do not expose the postgres port to
+      # the host; the backend reaches postgres over the internal compose network.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # NOTE: Do not publish the postgres port in production. The backend talks
+    # to postgres over the internal compose network. Uncomment only for local
+    # debugging, and bind to localhost:
+    # ports:
+    #   - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-authentiq} -d ${POSTGRES_DB:-authentiq}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
-    env_file:
-      - .env
+      dockerfile: Dockerfile
+    container_name: authentiq-backend
     environment:
-      AUTHENTIQ_STORAGE_DIR: /data/storage
-      AUTHENTIQ_UPLOAD_DIR: /data/storage/uploads
-      AUTHENTIQ_EVIDENCE_DIR: /data/storage/evidence
-      AUTHENTIQ_LEDGER_FILE: /data/storage/ledger.jsonl
-      AUTHENTIQ_PUBLIC_APP_URL: http://localhost:8080
-    volumes:
-      - authentiq_data:/data
+      - AUTHENTIQ_DATABASE_URL=${AUTHENTIQ_DATABASE_URL:-postgresql+psycopg://authentiq:${POSTGRES_PASSWORD:-authentiq}@postgres:5432/authentiq}
+      - AUTHENTIQ_LEDGER_MODE=${AUTHENTIQ_LEDGER_MODE:-simulation}
+      - AUTHENTIQ_CHAIN_RPC_URL=${AUTHENTIQ_CHAIN_RPC_URL:-}
+      - AUTHENTIQ_CHAIN_PRIVATE_KEY=${AUTHENTIQ_CHAIN_PRIVATE_KEY:-}
+      - AUTHENTIQ_CHAIN_CONTRACT_ADDRESS=${AUTHENTIQ_CHAIN_CONTRACT_ADDRESS:-}
+      - AUTHENTIQ_CHAIN_ID=${AUTHENTIQ_CHAIN_ID:-80002}
+      - AUTHENTIQ_SECRET_KEY=${AUTHENTIQ_SECRET_KEY}
+      - AUTHENTIQ_ENVIRONMENT=production
+      - AUTHENTIQ_DEBUG=false
+      - AUTHENTIQ_CORS_ORIGINS=${AUTHENTIQ_CORS_ORIGINS}
+      - AUTHENTIQ_PUBLIC_APP_URL=${AUTHENTIQ_PUBLIC_APP_URL}
+      - AUTHENTIQ_API_PUBLIC_URL=${AUTHENTIQ_API_PUBLIC_URL}
     ports:
       - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - storage_data:/srv/storage
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
-      args:
-        VITE_API_URL: /api
+      dockerfile: Dockerfile
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000/api}
+    ports:
+      - "80:80"
     depends_on:
       backend:
         condition: service_healthy
-    ports:
-      - "8080:80"
     restart: unless-stopped
 
 volumes:
-  authentiq_data:
+  postgres_data:
+  storage_data:

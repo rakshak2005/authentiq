@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   CheckCircle2,
+  ExternalLink,
   Fingerprint,
   KeyRound,
   Lock,
@@ -16,9 +17,8 @@ import { toast } from "sonner";
 import { BrandLogo } from "@/components/BrandLogo";
 import { HashValue } from "@/components/common/hash-value";
 import { OwnershipDna } from "@/components/common/ownership-dna";
-import { LedgerBadge, StatusBadge } from "@/components/common/status-badge";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { LedgerBadge, StatusBadge, polygonExplorerLink } from "@/components/common/status-badge";
+import { Button } from "@/components/ui/button";import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -209,7 +209,23 @@ export default function PublicVerifyPage() {
                           <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-muted-foreground">Commitment</span><HashValue value={record.commitment} label="Commitment" head={16} tail={12} /></div>
                         )}
                         {record?.ledger_tx_id && (
-                          <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-muted-foreground">Ledger transaction</span><HashValue value={record.ledger_tx_id} label="Ledger transaction" head={14} tail={10} /></div>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-muted-foreground">Ledger transaction</span>
+                            <div className="flex items-center gap-1">
+                              <HashValue value={record.ledger_tx_id} label="Ledger transaction" head={14} tail={10} />
+                              {record?.ledger_mode === "polygon" && (
+                                <a
+                                  href={polygonExplorerLink(record.ledger_tx_id)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="size-6 shrink-0 rounded border border-border/60 bg-muted/40 text-[10px] text-violet hover:bg-violet/20 hover:text-violet"
+                                  title="View on Polygon Amoy Explorer"
+                                >
+                                  <ExternalLink className="size-3.5" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
                         )}
                         {record?.organization && (
                           <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-muted-foreground">Organization</span><span className="text-foreground">{record.organization}</span></div>

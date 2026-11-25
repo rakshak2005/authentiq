@@ -70,6 +70,58 @@ def _new_ref() -> str:
     return f"DSP-{utcnow().year}-{secrets.token_hex(3).upper()}"
 
 
+def _validate_dispute_proofs(db: Session, dispute: Dispute, registration: Registration, determination: str) -> None:
+    """Validate ZKP proofs and compare registration timestamps for dispute resolution.
+
+    Records the validation outcome in the dispute's resolution_reason when no
+    explicit reason was provided, ensuring every resolution is auditable.
+    """
+    from app.models import ZkpProof
+
+    related = db.execute(
+        select(Registration).where(Registration.sha256 == registration.sha256).order_by(Registration.registered_at.asc())
+    ).scalars().all()
+
+    proofs = db.execute(
+        select(ZkpProof).where(ZkpProof.registration_id.in_([r.id for r in related])).order_by(ZkpProof.created_at.desc())
+    ).scalars().all() if related else []
+
+    verified_proofs = [p for p in proofs if p.status == "verified"]
+    earliest = related[0] if related else registration
+
+    timestamp_comparison = {
+        "disputed_registration": {
+            "registration_id": registration.registration_id,
+            "registered_at": registration.registered_at.isoformat(),
+        },
+        "earliest_registration": {
+            "registration_id": earliest.registration_id,
+            "registered_at": earliest.registered_at.isoformat(),
+        },
+        "disputed_is_earliest": earliest.id == registration.id,
+    }
+
+    reason_parts = [f"Determination: {determination}."]
+    if verified_proofs:
+        reason_parts.append(
+            f"{len(verified_proofs)} verified ZKP proof(s) found across {len(related)} related registration(s)."
+        )
+    else:
+        reason_parts.append("No verified ZKP proofs found for the disputed registration(s).")
+
+    if not timestamp_comparison["disputed_is_earliest"]:
+        reason_parts.append(
+            f"The disputed registration ({registration.registration_id}) is not the earliest; "
+            f"earliest is {earliest.registration_id} registered at {earliest.registered_at.isoformat()}."
+        )
+    else:
+        reason_parts.append(
+            f"The disputed registration ({registration.registration_id}) is the earliest on record."
+        )
+
+    dispute.resolution_reason = dispute.resolution_reason or " ".join(reason_parts)
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_dispute(
     payload: DisputeCreateRequest,
@@ -163,6 +215,94 @@ def list_disputes(
         claimant = db.get(User, dispute.claimant_id)
         result.append(dispute_out(dispute, registration, claimant.display_name if claimant else None))
     return {"items": result, "page": page, "page_size": page_size}
+
+
+@router.get("/conflicts")
+def list_conflicts(
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Detect conflicting claims: registrations sharing an identical SHA-256
+    fingerprint that may indicate duplicate or derivative works.
+
+    Returns groups of registrations with the same fingerprint, ordered by
+    earliest registration first, so reviewers can identify potential
+    conflicts before they become disputes.
+    """
+    page = max(1, page)
+    page_size = min(100, max(1, page_size))
+
+    # Find all SHA-256 values that have more than one registration
+    dup_subq = (
+        select(Registration.sha256)
+        .group_by(Registration.sha256)
+        .having(func.count(Registration.id) > 1)
+        .subquery()
+    )
+
+    # Get all registrations with those SHA-256 values
+    conflicts = db.execute(
+        select(Registration)
+        .where(Registration.sha256.in_(select(dup_subq.c.sha256)))
+        .order_by(Registration.sha256, Registration.registered_at.asc())
+    ).scalars().all()
+
+    # Group by SHA-256
+    groups: dict[str, list] = {}
+    for reg in conflicts:
+        groups.setdefault(reg.sha256, []).append(reg)
+
+    items = []
+    for sha256, registrations in groups.items():
+        registrations.sort(key=lambda r: r.registered_at or r.created_at)
+        earliest = registrations[0]
+        owners = {}
+        for reg in registrations:
+            owner = db.get(User, reg.user_id)
+            owners[reg.user_id] = owner.display_name if owner else "unknown"
+
+        # Check if any active dispute already exists for this fingerprint
+        existing_dispute = db.execute(
+            select(Dispute).where(
+                Dispute.registration_id.in_([r.id for r in registrations]),
+                Dispute.status.in_(["open", "under_review", "evidence_requested"]),
+            )
+        ).scalar_one_or_none()
+
+        items.append(
+            {
+                "sha256": sha256,
+                "registration_count": len(registrations),
+                "earliest_registration_id": earliest.registration_id,
+                "earliest_registered_at": earliest.registered_at.isoformat() if earliest.registered_at else None,
+                "registrations": [
+                    {
+                        "registration_id": reg.registration_id,
+                        "id": reg.id,
+                        "title": reg.title,
+                        "owner_id": reg.user_id,
+                        "owner_name": owners.get(reg.user_id, "unknown"),
+                        "registered_at": reg.registered_at.isoformat() if reg.registered_at else None,
+                        "ledger_mode": reg.ledger_mode,
+                        "ledger_tx_id": reg.ledger_tx_id,
+                        "status": reg.status,
+                        "is_earliest": reg.id == earliest.id,
+                    }
+                    for reg in registrations
+                ],
+                "has_active_dispute": existing_dispute is not None,
+                "dispute_ref": existing_dispute.dispute_ref if existing_dispute else None,
+            }
+        )
+
+    items.sort(key=lambda g: g["earliest_registered_at"] or "")
+    total = len(items)
+    offset = (page - 1) * page_size
+    page_items = items[offset : offset + page_size]
+
+    return {"items": page_items, "page": page, "page_size": page_size, "total": total}
 
 
 @router.get("/{dispute_id}")
@@ -303,12 +443,25 @@ def update_status(
     if payload.status in {"under_review", "evidence_requested"} and not (
         reviewer or dispute.claimant_id == user.id or dispute.respondent_id == user.id
     ):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to change this dispute")
+        raise HTTPException(status_code=status.HTTP_423_FORBIDDEN, detail="You are not authorized to change this dispute")
     if payload.status in {"resolved", "rejected"} and not payload.resolution:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="A resolution summary is required")
+    if payload.status in {"resolved", "rejected"} and payload.determination is None:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="A determination is required to resolve or reject a dispute")
+    if payload.determination and payload.status not in {"resolved", "rejected"}:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Determination can only be set when resolving or rejecting a dispute")
+
+    # Proof validation and timestamp comparison for resolution
+    if payload.status == "resolved":
+        _validate_dispute_proofs(db, dispute, registration, payload.determination)
+
     dispute.status = payload.status
     if payload.resolution:
         dispute.resolution = payload.resolution
+    if payload.determination:
+        dispute.determination = payload.determination
+    if payload.resolution_reason:
+        dispute.resolution_reason = payload.resolution_reason
     if payload.status in {"resolved", "rejected"}:
         dispute.resolved_at = utcnow()
         if payload.status == "resolved":
@@ -332,10 +485,15 @@ def update_status(
         actor_ref=user.email,
         entity_type="dispute",
         entity_id=dispute.dispute_ref,
-        metadata={"status": dispute.status, "reviewer": reviewer},
+        metadata={
+            "status": dispute.status,
+            "reviewer": reviewer,
+            "determination": dispute.determination,
+            "resolution_reason": dispute.resolution_reason,
+        },
     )
     db.commit()
-    return {"message": "Dispute status updated", "status": dispute.status}
+    return {"message": "Dispute status updated", "status": dispute.status, "determination": dispute.determination}
 
 
 @router.get("/{dispute_id}/report")

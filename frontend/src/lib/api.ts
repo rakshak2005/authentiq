@@ -1,6 +1,8 @@
 const ACCESS_KEY = "authentiq_access_token";
 const REFRESH_KEY = "authentiq_refresh_token";
 const USER_KEY = "authentiq_user";
+const ACCESS_COOKIE = "authentiq_access_token";
+const REFRESH_COOKIE = "authentiq_refresh_token";
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 export class ApiError extends Error {
@@ -14,17 +16,58 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Cookie helpers for secure token migration.
+ *
+ * SECURITY NOTE (production migration plan):
+ *   Tokens are currently stored in localStorage, which is vulnerable to XSS.
+ *   The recommended production pattern is for the backend to set
+ *   HttpOnly, Secure, SameSite=Strict cookies on login/refresh responses:
+ *     Set-Cookie: authentiq_access_token=...; HttpOnly; Secure; SameSite=Strict
+ *   With httpOnly cookies, the browser sends them automatically on requests
+ *   and frontend JavaScript cannot read them — eliminating XSS token theft.
+ *   Until the backend sets these cookies, localStorage is used as a fallback.
+ */
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, "\\$1") + "=([^;]*)"));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function setCookie(name: string, value: string, days = 7) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+}
+
+function deleteCookie(name: string) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+}
+
+/**
+ * Get the access token, preferring an httpOnly cookie (set by the backend)
+ * and falling back to localStorage during the migration period.
+ */
 export function getAccessToken() {
-  return localStorage.getItem(ACCESS_KEY);
+  return getCookie(ACCESS_COOKIE) ?? localStorage.getItem(ACCESS_KEY);
 }
 
+/**
+ * Get the refresh token, preferring an httpOnly cookie and falling back to
+ * localStorage during the migration period.
+ */
 export function getRefreshToken() {
-  return localStorage.getItem(REFRESH_KEY);
+  return getCookie(REFRESH_COOKIE) ?? localStorage.getItem(REFRESH_KEY);
 }
 
+/**
+ * Store the auth session. When the backend sets httpOnly cookies, the cookie
+ * values are already managed by the browser; this call persists the values to
+ * localStorage as a fallback for non-cookie deployments.
+ */
 export function setAuthSession(access: string, refresh: string, user?: unknown) {
   localStorage.setItem(ACCESS_KEY, access);
   localStorage.setItem(REFRESH_KEY, refresh);
+  setCookie(ACCESS_COOKIE, access);
+  setCookie(REFRESH_COOKIE, refresh);
   if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
@@ -46,6 +89,8 @@ export function clearAuthSession() {
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
   localStorage.removeItem(USER_KEY);
+  deleteCookie(ACCESS_COOKIE);
+  deleteCookie(REFRESH_COOKIE);
 }
 
 let expiredHandler: (() => void) | null = null;

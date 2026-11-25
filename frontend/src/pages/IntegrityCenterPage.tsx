@@ -21,9 +21,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/lib/api";
-import type { IntegrityOverview } from "@/lib/types";
+import type { IntegrityOverview, LedgerStatus } from "@/lib/types";
 import { formatDate } from "@/lib/format";
 import { Link } from "react-router-dom";
+import { LedgerStatusIndicator } from "@/components/common/status-badge";
 
 export default function IntegrityCenterPage() {
   const [busy, setBusy] = useState(false);
@@ -81,8 +82,7 @@ export default function IntegrityCenterPage() {
           hint={`${data.ledger.records} block(s) · ${data.ledger.mode}`}
           tone={ledgerOk ? "green" : "amber"}
           icon={ledgerOk ? <ShieldCheck /> : <FileWarning />}
-        />
-        <StatCard
+        />        <StatCard
           label="Audit chain"
           value={auditOk ? "Verified" : "Broken"}
           hint={`${data.audit_chain.events} event(s) hashed`}
@@ -119,7 +119,10 @@ export default function IntegrityCenterPage() {
                   {data.ledger.network} · record hash, previous hash, and payload digest recomputed
                 </p>
               </div>
-              <Badge variant={ledgerOk ? "green" : "red"}>{ledgerOk ? "Valid" : "Invalid"}</Badge>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant={ledgerOk ? "green" : "red"}>{ledgerOk ? "Valid" : "Invalid"}</Badge>
+                <LedgerStatusIndicator />
+              </div>
             </div>
             {data.ledger.last_hash && (
               <HashValue value={data.ledger.last_hash} label="Last ledger hash" head={16} tail={12} />

@@ -174,6 +174,8 @@ def dispute_out(dispute, registration=None, claimant_name=None) -> dict:
         "description": dispute.description,
         "status": dispute.status,
         "resolution": dispute.resolution,
+        "determination": dispute.determination,
+        "resolution_reason": dispute.resolution_reason,
         "earliest_registration_id": dispute.earliest_registration_id,
         "created_at": iso(dispute.created_at),
         "updated_at": iso(dispute.updated_at),
@@ -226,6 +228,9 @@ def ledger_out(item) -> dict:
         "network": item.network,
         "status": item.status,
         "chain_tx_hash": item.chain_tx_hash,
+        "contract_address": item.contract_address,
+        "chain_id": item.chain_id,
+        "revision": item.revision,
         "timestamp": iso(item.timestamp),
     }
 

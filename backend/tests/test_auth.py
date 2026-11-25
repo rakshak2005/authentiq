@@ -117,10 +117,24 @@ def test_logout_revokes_current_session(client):
 
 def test_password_reset_flow_is_single_use(client):
     user = register_user(client)
-    forgot = client.post("/api/auth/forgot-password", json={"email": user["email"]})
-    assert forgot.status_code == 200
-    token = forgot.json()["detail"]
-    assert token
+    from app.core.database import SessionLocal
+    from app.models import PasswordResetToken
+    from app.security.crypto import sha256_text, utcnow
+    from app.security.tokens import create_reset_token
+    from datetime import timedelta
+
+    from app.core.config import settings
+
+    token = create_reset_token(user["user"]["id"])
+    with SessionLocal() as db:
+        db.add(
+            PasswordResetToken(
+                user_id=user["user"]["id"],
+                token_hash=sha256_text(token),
+                expires_at=utcnow() + timedelta(minutes=settings.reset_token_minutes),
+            )
+        )
+        db.commit()
 
     reset = client.post(
         "/api/auth/reset-password",

@@ -26,8 +26,12 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
-      - name: Install dependencies
+      - name: Install backend dependencies
         run: pip install -r requirements.txt
+
+      - name: Install blockchain dependencies for integration tests
+        working-directory: blockchain
+        run: npm ci
 
       - name: Run the test suite
         run: python -m pytest
@@ -55,3 +59,68 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  circuits:
+    name: Groth16 circuit and proof tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: circuits
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: circuits/package-lock.json
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install Circom compiler
+        run: |
+          # Circom v2.1.6 has an `unused-assignments` warning in the
+          # `constraint_list` dependency that becomes fatal under
+          # `RUSTFLAGS=-D warnings`. Scope the allowance to this step only;
+          # do not weaken the project's global warning checks.
+          RUSTFLAGS="-A unused-assignments" cargo install --git https://github.com/iden3/circom.git --tag v2.1.6 --locked circom
+
+      - name: Verify Circom compiler
+        run: circom --version
+
+      - name: Install circuit dependencies
+        run: npm ci
+
+      - name: Compile circom circuit
+        run: npm run build
+
+      - name: Create ephemeral Groth16 test setup
+        run: |
+          npx --no-install snarkjs powersoftau new bn128 8 build/pot8_0000.ptau
+          echo "AUTHENTIQ CI test entropy" | npx --no-install snarkjs powersoftau contribute build/pot8_0000.ptau build/pot8_final.ptau --name="AUTHENTIQ CI"
+          npx --no-install snarkjs powersoftau prepare phase2 build/pot8_final.ptau build/pot8_final_phase2.ptau
+          npm run setup
+          echo "AUTHENTIQ CI zkey entropy" | npm run contribute
+          npm run export
+
+      - name: Run Groth16 proof tests
+        run: node scripts/test_groth16.js
+
+      - name: Run Python Groth16 proof tests
+        run: python scripts/test_groth16_python.py
+
+  docs:
+    name: Documentation checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify required documentation files exist
+        run: |
+          test -f docs/DEVELOPMENT_BASELINE.md
+          test -f docs/ZKP_ARCHITECTURE_AUDIT.md
+          test -f docs/ZKP_GROTH16_TRUSTED_SETUP.md
+          test -f docs/BLOCKCHAIN_TESTING.md
+          echo "All documentation files present"
