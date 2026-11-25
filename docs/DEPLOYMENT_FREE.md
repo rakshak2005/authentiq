@@ -112,6 +112,10 @@ Then add the same env vars under **Environment** (at minimum:
 | `AUTHENTIQ_API_PUBLIC_URL` | public API URL used in responses/links |
 | `AUTHENTIQ_DEMO_MODE=false` | required when `ENVIRONMENT=production` |
 
+Optional: `AUTHENTIQ_CORS_ORIGIN_REGEX=https://.*\.vercel\.app` accepts every
+Vercel preview URL without editing the allow-list on each deploy. Leave it
+empty to allow only `AUTHENTIQ_CORS_ORIGINS`.
+
 ---
 
 ## 3. Deploy the frontend on Vercel
@@ -190,13 +194,74 @@ These are platform limits, not bugs in the app:
 5. **Free Render Postgres expires after 30 days** — that is why step 1 uses
    Neon. (Neon's free tier is ~0.5 GB with auto-suspend; check current limits.)
 6. **CORS is an exact-match list.** Vercel *preview* deployments get random
-   URLs and will be blocked until you add them to `AUTHENTIQ_CORS_ORIGINS`
-   (or add `allow_origin_regex` support in `backend/app/main.py`). Production
-   domain and custom domains are fine.
+   URLs and will be blocked until you add them to `AUTHENTIQ_CORS_ORIGINS`,
+   or set `AUTHENTIQ_CORS_ORIGIN_REGEX` (e.g. `https://.*\.vercel\.app`) to
+   accept them dynamically. Production domain and custom domains are fine.
 7. **No backups** on free tiers. `pg_dump` the Neon database before demos.
 8. **`web3` is imported eagerly** in `backend/app/ledger/blockchain.py`. It
    costs build time and ~40 MB RAM even in simulation mode. Making that import
    lazy would speed up free-tier boots.
+
+---
+
+## Troubleshooting
+
+### `No 'Access-Control-Allow-Origin' header is present` on `/api/...`
+
+The browser origin is not in the backend allow-list. Check:
+
+1. Render → `authentiq-api` → Environment → `AUTHENTIQ_CORS_ORIGINS`.
+   It must contain the **exact** origin shown in the browser error
+   (`scheme://host`, no trailing slash, no path).
+2. Vercel preview deployments change URL on every push. Either add each one,
+   or set `AUTHENTIQ_CORS_ORIGIN_REGEX=https://.*\.vercel\.app` and redeploy.
+3. Test the preflight directly:
+
+   ```powershell
+   curl.exe -i -X OPTIONS "https://<api>.onrender.com/api/auth/login" `
+     -H "Origin: https://<your-app>.vercel.app" `
+     -H "Access-Control-Request-Method: POST" `
+     -H "Access-Control-Request-Headers: content-type"
+   ```
+
+   A working response includes `access-control-allow-origin: <origin>`.
+   If that header is missing, the origin is not allowed — the API itself is fine.
+
+### `Failed to fetch ... /auth/login` (404, missing `/api`)
+
+`VITE_API_URL` must include the API prefix:
+`https://<api>.onrender.com/api`, **not** `https://<api>.onrender.com`.
+Vite bakes this in at build time, so change it in Vercel → Settings →
+Environment Variables and **redeploy**.
+
+Quick check:
+
+```powershell
+curl.exe -o NUL -w "%{http_code}" https://<api>.onrender.com/auth/login        # 404
+curl.exe -o NUL -w "%{http_code}" https://<api>.onrender.com/api/auth/login    # 405 = route exists
+```
+
+### `manifest.webmanifest` redirected to `vercel.com/sso-api` (CORS error)
+
+Vercel **Deployment Protection** is intercepting the deployment. This happens on
+protected preview URLs (`https://<project>-<hash>-<team>.vercel.app`).
+
+- Use the project's production URL instead of the deployment-specific URL, or
+- Vercel → Project → **Settings → Deployment Protection → Vercel
+  Authentication → Disabled** (or scope it to preview only and browse
+  production).
+
+The manifest file itself is fine (`frontend/public/manifest.webmanifest`).
+
+### Render logs show `Invalid value for AUTHENTIQ_SECRET_KEY`
+
+Production refuses the default dev secret. Set a random value of at least
+32 characters (Render's blueprint generates one automatically).
+
+### Alembic fails with an interpolation error
+
+The database password contains `%`. Either use an alphanumeric password or
+escape `%` as `%%` in `AUTHENTIQ_DATABASE_URL`.
 
 ---
 

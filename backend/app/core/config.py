@@ -30,6 +30,9 @@ class Settings(BaseSettings):
 
     database_url: str = f"sqlite:///{(BACKEND_DIR / 'authentiq.db').as_posix()}"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173"
+    # Optional regex for origins that change per deployment (e.g. Vercel
+    # preview URLs). Example: https://.*\.vercel\.app
+    cors_origin_regex: str = ""
     public_app_url: str = "http://localhost:5173"
     api_public_url: str = "http://localhost:8000"
 
