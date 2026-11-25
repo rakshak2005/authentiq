@@ -1,0 +1,55 @@
+# Render Blueprint for the AUTHENTIQ API (free tier friendly).
+#
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repo -> Apply.
+# Render will prompt for every env var marked `sync: false`.
+#
+# Notes:
+# - `plan: free` = 0.1 CPU / 512 MB RAM, spins down after 15 min idle,
+#   and has an EPHEMERAL filesystem (see docs/DEPLOYMENT_FREE.md).
+# - The database is intentionally external (Neon/Supabase free tier).
+#   Render's own free Postgres is deleted 30 days after creation.
+services:
+  - type: web
+    name: authentiq-api
+    runtime: python
+    plan: free
+    region: singapore
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      # Pin Python: Render now defaults to 3.14, which lacks wheels for
+      # some pinned deps (web3 / psycopg / argon2-cffi).
+      - key: PYTHON_VERSION
+        value: 3.12.7
+
+      - key: AUTHENTIQ_ENVIRONMENT
+        value: production
+      - key: AUTHENTIQ_DEBUG
+        value: false
+      - key: AUTHENTIQ_SECRET_KEY
+        generateValue: true
+      - key: AUTHENTIQ_DEMO_MODE
+        value: false
+      - key: AUTHENTIQ_SEED_DEMO
+        value: false
+
+      # Postgres connection string from Neon/Supabase, e.g.
+      # postgresql://user:pass@ep-xxx.aws.neon.tech/authentiq?sslmode=require
+      - key: AUTHENTIQ_DATABASE_URL
+        sync: false
+
+      # https://<your-vercel-project>.vercel.app (comma-separated if several)
+      - key: AUTHENTIQ_CORS_ORIGINS
+        sync: false
+      - key: AUTHENTIQ_PUBLIC_APP_URL
+        sync: false
+      - key: AUTHENTIQ_API_PUBLIC_URL
+        sync: false
+
+      # Simulation ledger is the default. Switch to `polygon` (Polygon Amoy
+      # testnet) if you want ledger records to survive free-tier restarts.
+      - key: AUTHENTIQ_LEDGER_MODE
+        value: simulation
