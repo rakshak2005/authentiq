@@ -54,6 +54,20 @@ export default function DashboardPage() {
   const ledger = useQuery({ queryKey: ["ledger-status"], queryFn: () => api.get<LedgerStatus>("/ledger/status") });
   const audit = useQuery({ queryKey: ["audit-chain"], queryFn: () => api.get<AuditChain>("/audit-logs/verify") });
 
+  // Hooks must run in the same order on every render, so compute this before
+  // the loading/error early returns below.
+  const allRegistrations = activity.data?.recent_registrations || [];
+  const filteredRegistrations = useMemo(() => {
+    return allRegistrations.filter((registration) => {
+      const matchesSearch =
+        registration.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        registration.registration_id.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesAssetType = !assetTypeFilter || registration.asset_type === assetTypeFilter;
+      const matchesStatus = !statusFilter || registration.status === statusFilter;
+      return matchesSearch && matchesAssetType && matchesStatus;
+    });
+  }, [allRegistrations, searchQuery, assetTypeFilter, statusFilter]);
+
   if (summary.isLoading) {
     return (
       <div className="space-y-6">
@@ -69,19 +83,6 @@ export default function DashboardPage() {
 
   const stats = summary.data.stats;
   const data = activity.data;
-
-  // Filter recent registrations
-  const allRegistrations = data?.recent_registrations || [];
-  const filteredRegistrations = useMemo(() => {
-    return allRegistrations.filter((registration) => {
-      const matchesSearch =
-        registration.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        registration.registration_id.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesAssetType = !assetTypeFilter || registration.asset_type === assetTypeFilter;
-      const matchesStatus = !statusFilter || registration.status === statusFilter;
-      return matchesSearch && matchesAssetType && matchesStatus;
-    });
-  }, [allRegistrations, searchQuery, assetTypeFilter, statusFilter]);
 
   return (
     <div className="space-y-6">
