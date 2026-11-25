@@ -368,21 +368,42 @@ def ledger_truncation_check(db: Session, ledger_audit: dict) -> list[str]:
 
     A hash chain alone cannot detect the removal of the newest record: the
     remaining records still form a valid chain. The database keeps an
-    independent copy of every ledger record, so comparing the record count and
-    the head hash exposes a truncation.
+    independent copy of every ledger record, so a record that continues the
+    chain past the end of the file exposes a truncation.
+
+    More than one backend can share a database, so the record *count* is not a
+    reliable signal: a second instance writes rows this instance's file never
+    held. The chain itself is the signal.
     """
     issues: list[str] = []
-    file_records = ledger_audit.get("records")
-    db_records = db.execute(select(func.count()).select_from(LedgerTransaction)).scalar_one()
-    if isinstance(file_records, int) and file_records < db_records:
+    history = ledger_service.get_audit_history()
+    db_rows = db.execute(select(LedgerTransaction)).scalars().all()
+    if not history:
+        if db_rows:
+            issues.append(
+                f"The ledger file is empty while the database holds {len(db_rows)} record(s). The file was truncated."
+            )
+        return issues
+
+    file_head = history[0]
+    file_ids = [record.get("tx_id") for record in history]
+    db_by_tx = {row.tx_id: row for row in db_rows}
+
+    orphan = [tx_id for tx_id in file_ids if tx_id not in db_by_tx]
+    if orphan:
         issues.append(
-            f"Ledger file holds {file_records} record(s) while the database holds {db_records}. The tail was removed."
+            f"{len(orphan)} ledger record(s) in the ledger file have no copy in the database."
         )
-    db_head = db.execute(
-        select(LedgerTransaction).order_by(LedgerTransaction.block_number.desc()).limit(1)
-    ).scalar_one_or_none()
-    file_head = ledger_audit.get("last_hash")
-    if db_head is not None and file_head and db_head.record_hash != file_head:
+
+    successors = [row for row in db_rows if row.prev_hash == file_head.get("record_hash")]
+    if successors:
+        issues.append(
+            f"{len(successors)} ledger record(s) in the database continue the chain past the end "
+            "of the ledger file. The tail was removed."
+        )
+
+    head_row = db_by_tx.get(file_head.get("tx_id"))
+    if head_row is not None and head_row.record_hash != file_head.get("record_hash"):
         issues.append("Ledger head hash differs between the ledger file and the database copy.")
     return issues
 
@@ -395,7 +416,14 @@ def workspace_overview(db: Session, user: Registration) -> dict:
         select(FileMetadata).where(FileMetadata.registration_id.in_([item.id for item in registrations]))
     ).scalars().all() if registrations else []
     metadata_map = {item.registration_id: item for item in metadata_rows}
-    missing_ledger = [item.registration_id for item in registrations if item.ledger_tx_id and not ledger_service.verify_record(item.ledger_tx_id)]
+    known_transactions = set(db.execute(select(LedgerTransaction.tx_id)).scalars().all())
+    missing_ledger = [
+        item.registration_id
+        for item in registrations
+        if item.ledger_tx_id
+        and not ledger_service.verify_record(item.ledger_tx_id)
+        and item.ledger_tx_id not in known_transactions
+    ]
     missing_files = [item.registration_id for item in registrations if not Path(item.storage_path).exists()]
     duplicate_groups = db.execute(
         select(Registration.sha256, func.count(Registration.id))

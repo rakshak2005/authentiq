@@ -34,7 +34,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
-from sqlalchemy import DateTime, bindparam, func, select, text, update
+from sqlalchemy import DateTime, bindparam, delete, func, select, text, update
 from sqlalchemy import inspect
 
 from app.core.config import settings
@@ -186,26 +186,74 @@ def _read_ledger(path: Path) -> list[dict]:
 
 
 def _restore(db, backup_dir: Path, ledger_path: Path) -> None:
-    """Put the tables and the ledger file back the way the backup found them."""
+    """Put the tables and the ledger file back the way the backup found them.
+
+    The rows are restored in place rather than deleted and re-inserted: a
+    blind delete breaks every foreign key that points at the table, and the
+    order that satisfies all of them does not exist because the schema has a
+    cycle between users and organizations.
+    """
     payload = json.loads((backup_dir / "tables.json").read_text(encoding="utf-8"))
-    for name, rows in payload["tables"].items():
-        table = Base.metadata.tables.get(name)
-        if table is None:
-            continue
-        db.execute(table.delete())
+    tables = [Base.metadata.tables[name] for name in payload["tables"] if name in Base.metadata.tables]
+
+    # Rows written after the backup are removed first, children before parents.
+    for table in reversed(_dependency_order(tables)):
+        rows = payload["tables"].get(table.name) or []
+        primary = list(table.primary_key.columns)[0]
+        backup_keys = {row.get(primary.key) for row in rows}
+        for key in db.execute(select(primary)).scalars().all():
+            if key not in backup_keys:
+                db.execute(delete(table).where(primary == key))
+
+    for table in _dependency_order(tables):
+        rows = payload["tables"].get(table.name) or []
+        primary = list(table.primary_key.columns)[0]
+        existing = set(db.execute(select(primary)).scalars().all())
         for row in rows:
-            values = dict(row)
-            for column in table.columns:
-                if isinstance(column.type, DateTime) and isinstance(values.get(column.key), str):
-                    parsed = _parse_iso(values[column.key])
-                    if parsed is not None:
-                        values[column.key] = parsed
-            db.execute(table.insert().values(values))
+            values = _row_values(table, row)
+            key = values.get(primary.key)
+            if key in existing:
+                db.execute(update(table).where(primary == key).values(values))
+            else:
+                db.execute(table.insert().values(values))
     db.commit()
     ledger_backup = backup_dir / "ledger.jsonl"
     if ledger_backup.exists():
         ledger_path.write_text(ledger_backup.read_text(encoding="utf-8"), encoding="utf-8")
     print(f"Restored {len(payload['tables'])} tables and the ledger file from {backup_dir}")
+
+
+def _dependency_order(tables) -> list:
+    """Order tables so that a parent is written before its children."""
+    remaining = list(tables)
+    ordered = []
+    while remaining:
+        progressed = False
+        for table in list(remaining):
+            parents = {
+                column.table
+                for column in table.columns
+                for foreign_key in column.foreign_keys
+            }
+            if not parents or all(parent in ordered or parent not in remaining for parent in parents):
+                ordered.append(table)
+                remaining.remove(table)
+                progressed = True
+        if not progressed:
+            ordered.extend(remaining)
+            break
+    return ordered
+
+
+def _row_values(table, row: dict) -> dict:
+    """Turn a backed-up row back into values the database accepts."""
+    values = dict(row)
+    for column in table.columns:
+        if isinstance(column.type, DateTime) and isinstance(values.get(column.key), str):
+            parsed = _parse_iso(values[column.key])
+            if parsed is not None:
+                values[column.key] = parsed
+    return values
 
 
 def _write_ledger(path: Path, records: list[dict]) -> None:
@@ -238,16 +286,65 @@ def _rebuild_audit_chain(db) -> int:
     return len(entries)
 
 
-def _rebuild_ledger(db, path: Path, rebase: Rebase) -> tuple[list[dict], int]:
+def _file_record(row) -> dict:
+    """Rebuild a ledger file record from its database copy."""
+    return {
+        "tx_id": row.tx_id,
+        "block_number": row.block_number,
+        "timestamp": row.timestamp.isoformat() if row.timestamp else "",
+        "tx_type": row.tx_type,
+        "actor_id": row.actor_id,
+        "entity_type": row.entity_type,
+        "entity_id": row.entity_id,
+        "payload": row.payload or {},
+        "payload_digest": row.payload_digest,
+        "prev_hash": row.prev_hash,
+        "mode": row.mode,
+        "network": row.network,
+        "status": row.status,
+    }
+
+
+def _collect_ledger(db, path: Path) -> tuple[list[dict], int, int]:
+    """Reconcile the ledger file with the database copy of the ledger.
+
+    More than one backend can share a database. Each keeps its own
+    append-only file, so the file can be missing records another instance
+    wrote. The database holds every record, so the file is completed from it.
+
+    The other direction happens too: the file is written before the database
+    row is committed, so a request that fails in between leaves a record in
+    the file that no transaction ever confirmed. Those leftovers are dropped,
+    because the event they describe never completed.
+    """
     records = _read_ledger(path)
+    file_by_id = {record.get("tx_id"): record for record in records}
+    rows = db.execute(select(LedgerTransaction).order_by(LedgerTransaction.timestamp)).scalars().all()
+    db_ids = {row.tx_id for row in rows}
+
+    merged = []
+    appended = 0
+    for row in rows:
+        record = file_by_id.get(row.tx_id)
+        if record is None:
+            record = _file_record(row)
+            appended += 1
+        merged.append(record)
+    dropped = len([tx_id for tx_id in file_by_id if tx_id not in db_ids])
+    merged.sort(key=lambda record: str(record.get("timestamp", "")))
+    return merged, appended, dropped
+
+
+def _rebuild_ledger(db, records: list[dict], rebase: Rebase) -> tuple[list[dict], int]:
     previous = GENESIS_HASH
-    for record in records:
+    for index, record in enumerate(records):
         stamp = _parse_iso(str(record.get("timestamp", "")))
         if stamp is not None:
             record["timestamp"] = rebase.apply(stamp).isoformat()
         payload = _rebase_payload(record.get("payload") or {}, rebase)
         record["payload"] = payload
         record["payload_digest"] = digest(payload)
+        record["block_number"] = index
         record["prev_hash"] = previous
         candidate = {key: value for key, value in record.items() if key != "record_hash"}
         record["record_hash"] = digest(candidate)
@@ -265,6 +362,7 @@ def _rebuild_ledger(db, path: Path, rebase: Rebase) -> tuple[list[dict], int]:
             row.timestamp = stamp
         row.payload = record.get("payload")
         row.payload_digest = record.get("payload_digest") or ""
+        row.block_number = int(record.get("block_number") or 0)
         row.prev_hash = record.get("prev_hash") or ""
         row.record_hash = record.get("record_hash") or ""
         rows_updated += 1
@@ -333,6 +431,11 @@ def main() -> None:
         if db.get_bind().dialect.name == "postgresql":
             db.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": 728411903})
 
+        # The ledger records are collected before the timestamp pass: the
+        # records the file holds still carry their original timestamps, and
+        # the database rows would otherwise be shifted twice.
+        ledger_records, ledger_appended, ledger_dropped = _collect_ledger(db, ledger_path)
+
         shifted = 0
         existing = set(inspect(db.get_bind()).get_table_names())
         for table, column in columns:
@@ -356,7 +459,7 @@ def main() -> None:
             shifted += len(payload)
 
         audit_entries = _rebuild_audit_chain(db)
-        ledger_records, ledger_rows = _rebuild_ledger(db, ledger_path, rebase)
+        ledger_records, ledger_rows = _rebuild_ledger(db, ledger_records, rebase)
 
         original_ledger = ledger_path.read_text(encoding="utf-8") if ledger_path.exists() else ""
         try:
@@ -373,7 +476,10 @@ def main() -> None:
         audit_report = verify_audit_chain(db)
         print(f"Shifted        : {shifted} timestamps")
         print(f"Audit chain    : {'valid' if audit_report['valid'] else 'INVALID'} ({audit_entries} events)")
-        print(f"Ledger chain   : {len(ledger_records)} records, {ledger_rows} database rows")
+        print(
+            f"Ledger chain   : {len(ledger_records)} records, {ledger_rows} database rows "
+            f"(+{ledger_appended} from the database, -{ledger_dropped} rolled back)"
+        )
         if not audit_report["valid"]:
             for error in audit_report["errors"][:5]:
                 print(f"  ! {error}")

@@ -1,9 +1,27 @@
+from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.ledger.blockchain import PolygonAdapter
 from app.ledger.simulation import LedgerAdapter, LedgerError, LedgerUnavailable, SimulationLedger
 from app.models import LedgerTransaction
+
+
+def _record_timestamp(value) -> datetime:
+    """Read the timestamp the ledger itself stamped on the record."""
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    if isinstance(value, str):
+        text = value.strip().replace(" ", "T")
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        try:
+            parsed = datetime.fromisoformat(text)
+        except ValueError:
+            parsed = datetime.now(timezone.utc)
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc)
 
 
 class LedgerService:
@@ -44,6 +62,10 @@ class LedgerService:
             network=record.get("network", self.adapter.network),
             status=record.get("status", "confirmed"),
             chain_tx_hash=record.get("chain_tx_hash"),
+            # The ledger record is the authority on when the event happened.
+            # The column default would take a second clock reading and leave
+            # the database copy a fraction of a second away from the record.
+            timestamp=_record_timestamp(record.get("timestamp")),
         )
         db.add(transaction)
         db.flush()

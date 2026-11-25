@@ -111,6 +111,16 @@ npm run dev
 
 Open `http://localhost:5173`. The landing page is at `/`, the workspace sign-in is at `/login`. Vite proxies `/api` to `http://localhost:8000`.
 
+If another project already holds port 8000, run the backend on a free port and point the proxy at it:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8001
+cd ../frontend
+$env:VITE_API_PROXY_TARGET = "http://localhost:8001"
+npm run dev
+```
+
 ### 3. Demo login accounts
 
 The seed creates only the three demo login accounts. It does not create registrations, ideas, teams, alerts, transfers, disputes, verification links, ledger records, or audit events. Every workspace starts empty.
@@ -237,6 +247,12 @@ It maps every system timestamp onto the target day, keeps the order of the event
 ```powershell
 .\.venv\Scripts\python.exe -m scripts.rebase_timestamps --restore storage\backups\rebase-2026-11-12-20261112-160021
 ```
+
+The tool also reconciles the ledger file with the database copy of the ledger. More than one backend can share a database, and each keeps its own append-only file: records written by another instance are added to the file, and a record the file holds that no database transaction ever confirmed (a request that failed between the file write and the commit) is dropped. The chain is rebuilt over the reconciled set, so the file and the database always agree.
+
+### One ledger, several backends
+
+The integrity centre compares the ledger file with the database copy. Because several backends can share one database, the *number* of records is not a reliable signal of tampering: a second instance writes rows the local file never held. The check follows the chain instead. A record in the database whose `prev_hash` continues the chain past the end of the file means the tail was removed, and a record in the file with no database copy means the copy is incomplete. A row another instance wrote is neither, and is not reported.
 
 ## Docker Compose
 
